@@ -1,0 +1,218 @@
+{
+  "00-01": {
+    "date": "20-03-2023",
+    "hour": "00-01",
+    "is-cheap": false,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 172.56,
+    "units": "€/Mwh"
+  },
+  "01-02": {
+    "date": "20-03-2023",
+    "hour": "01-02",
+    "is-cheap": true,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 165.11,
+    "units": "€/Mwh"
+  },
+  "02-03": {
+    "date": "20-03-2023",
+    "hour": "02-03",
+    "is-cheap": true,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 164.35,
+    "units": "€/Mwh"
+  },
+  "03-04": {
+    "date": "20-03-2023",
+    "hour": "03-04",
+    "is-cheap": true,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 162.47,
+    "units": "€/Mwh"
+  },
+  "04-05": {
+    "date": "20-03-2023",
+    "hour": "04-05",
+    "is-cheap": true,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 162.39,
+    "units": "€/Mwh"
+  },
+  "05-06": {
+    "date": "20-03-2023",
+    "hour": "05-06",
+    "is-cheap": false,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 168.32,
+    "units": "€/Mwh"
+  },
+  "06-07": {
+    "date": "20-03-2023",
+    "hour": "06-07",
+    "is-cheap": false,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 185.1,
+    "units": "€/Mwh"
+  },
+  "07-08": {
+    "date": "20-03-2023",
+    "hour": "07-08",
+    "is-cheap": false,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 195.35,
+    "units": "€/Mwh"
+  },
+  "08-09": {
+    "date": "20-03-2023",
+    "hour": "08-09",
+    "is-cheap": false,
+    "is-under-avg": false,
+    "market": "PVPC",
+    "price": 209.36,
+    "units": "€/Mwh"
+  },
+  "09-10": {
+    "date": "20-03-2023",
+    "hour": "09-10",
+    "is-cheap": false,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 188.83,
+    "units": "€/Mwh"
+  },
+  "10-11": {
+    "date": "20-03-2023",
+    "hour": "10-11",
+    "is-cheap": false,
+    "is-under-avg": false,
+    "market": "PVPC",
+    "price": 224.72,
+    "units": "€/Mwh"
+  },
+  "11-12": {
+    "date": "20-03-2023",
+    "hour": "11-12",
+    "is-cheap": false,
+    "is-under-avg": false,
+    "market": "PVPC",
+    "price": 213.79,
+    "units": "€/Mwh"
+  },
+  "12-13": {
+    "date": "20-03-2023",
+    "hour": "12-13",
+    "is-cheap": false,
+    "is-under-avg": false,
+    "market": "PVPC",
+    "price": 208.72,
+    "units": "€/Mwh"
+  },
+  "13-14": {
+    "date": "20-03-2023",
+    "hour": "13-14",
+    "is-cheap": false,
+    "is-under-avg": false,
+    "market": "PVPC",
+    "price": 208.08,
+    "units": "€/Mwh"
+  },
+  "14-15": {
+    "date": "20-03-2023",
+    "hour": "14-15",
+    "is-cheap": true,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 160.31,
+    "units": "€/Mwh"
+  },
+  "15-16": {
+    "date": "20-03-2023",
+    "hour": "15-16",
+    "is-cheap": true,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 162.74,
+    "units": "€/Mwh"
+  },
+  "16-17": {
+    "date": "20-03-2023",
+    "hour": "16-17",
+    "is-cheap": false,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 175.86,
+    "units": "€/Mwh"
+  },
+  "17-18": {
+    "date": "20-03-2023",
+    "hour": "17-18",
+    "is-cheap": false,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 193.23,
+    "units": "€/Mwh"
+  },
+  "18-19": {
+    "date": "20-03-2023",
+    "hour": "18-19",
+    "is-cheap": false,
+    "is-under-avg": false,
+    "market": "PVPC",
+    "price": 246.47,
+    "units": "€/Mwh"
+  },
+  "19-20": {
+    "date": "20-03-2023",
+    "hour": "19-20",
+    "is-cheap": false,
+    "is-under-avg": false,
+    "market": "PVPC",
+    "price": 283.64,
+    "units": "€/Mwh"
+  },
+  "20-21": {
+    "date": "20-03-2023",
+    "hour": "20-21",
+    "is-cheap": false,
+    "is-under-avg": false,
+    "market": "PVPC",
+    "price": 268.01,
+    "units": "€/Mwh"
+  },
+  "21-22": {
+    "date": "20-03-2023",
+    "hour": "21-22",
+    "is-cheap": false,
+    "is-under-avg": false,
+    "market": "PVPC",
+    "price": 249.19,
+    "units": "€/Mwh"
+  },
+  "22-23": {
+    "date": "20-03-2023",
+    "hour": "22-23",
+    "is-cheap": false,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 196.26,
+    "units": "€/Mwh"
+  },
+  "23-24": {
+    "date": "20-03-2023",
+    "hour": "23-24",
+    "is-cheap": false,
+    "is-under-avg": true,
+    "market": "PVPC",
+    "price": 185.61,
+    "units": "€/Mwh"
+  }
+}
