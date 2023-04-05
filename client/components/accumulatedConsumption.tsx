@@ -1,18 +1,21 @@
-import useLastMeasures from "@/hooks/useLastMeasures";
+import useMonthMeasures from "@/hooks/useMonthMeasures";
 import { getCumulativeData } from "@/utils/getCumulativeData";
 import { AreaChart, Card, Title } from "@tremor/react";
 
 export default function AccumulatedConsumption() {
-  const measures = useLastMeasures();
-  const accumulatedMeasures = getCumulativeData(measures);
+  const { loading, error, data } = useMonthMeasures();
+  const accumulatedMeasures = getCumulativeData(data);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error :(</p>;
 
   return (
     <Card>
       <Title>Tu consumo (Marzo 2023)</Title>
       <AreaChart
         data={accumulatedMeasures}
-        index="hourCCH"
-        categories={["valueDouble"]}
+        index="date"
+        categories={["value"]}
         colors={["blue"]}
         yAxisWidth={20}
         showLegend={false}

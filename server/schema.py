@@ -1,11 +1,9 @@
 import graphene
 
-from mongo import electricity_collection
-from utils import format_date
-
+from worker import get_electricity_data_interval
 
 class Measurement(graphene.ObjectType):
-    date = graphene.DateTime()
+    date = graphene.Date()
     hour = graphene.Int()
     invoiced = graphene.Boolean()
     typePM = graphene.String()
@@ -15,36 +13,36 @@ class Measurement(graphene.ObjectType):
     real = graphene.Boolean()
     value = graphene.Float()
 
+class DailyMeasurements(graphene.ObjectType):
+    date = graphene.Date()
+    measurements = graphene.List(Measurement)
+
 
 class Query(graphene.ObjectType):
-    measurements = graphene.List(
-        Measurement, start_date=graphene.String(), end_date=graphene.String()
+    daily_measurements = graphene.List(
+        DailyMeasurements, start_date=graphene.String(), end_date=graphene.String()
     )
 
-    def resolve_measurements(self, info, start_date=None, end_date=None):
+    def resolve_daily_measurements(self, info, start_date=None, end_date=None):
 
-        query = {}
-        if start_date:
-            start_date = format_date(start_date)
-            query["date"] = {"$gte": start_date}
-        if end_date:
-            end_date = format_date(end_date)
-            if "date" in query:
-                query["date"]["$lte"] = end_date
-            else:
-                query["date"] = {"$lte": end_date}
+        results = get_electricity_data_interval(start_date, end_date)
 
-        results = electricity_collection.find(query)
-
-        measurements = []
+        daily_measurements = []
         for result in results:
-            for data in result["data"]:
-                date = result["date"].replace(hour=data["hourCCH"] - 1)
-                measurement = Measurement(
-                    date=date, value=data["valueDouble"]
+            date = result["date"] # dd/mm/yyyy (str)
+            measurements = [{
+                    "hour": hourly_data["hourCCH"] - 1,
+                    "value": hourly_data["valueDouble"] if "valueDouble" in hourly_data else None,
+                } for hourly_data in result["data"]]
+                
+            daily_measurements.append(
+                DailyMeasurements(
+                    date=date,
+                    measurements=measurements
                 )
-                measurements.append(measurement)
-        return measurements
+            )
+
+        return daily_measurements
 
 
 schema = graphene.Schema(query=Query)

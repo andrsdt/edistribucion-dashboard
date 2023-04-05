@@ -1,5 +1,4 @@
 import useLastMeasures from "@/hooks/useLastMeasures";
-import { CalendarDaysIcon, CalendarIcon } from "@heroicons/react/24/outline";
 import {
   Card,
   Flex,
@@ -10,7 +9,10 @@ import {
 } from "@tremor/react";
 
 export default function ConsumptionGraph() {
-  const measures = useLastMeasures();
+  const { loading, error, data } = useLastMeasures();
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error :(</p>;
 
   return (
     <Card>
@@ -24,9 +26,9 @@ export default function ConsumptionGraph() {
       </Flex>
       <LineChart
         className="mt-3"
-        data={measures}
-        index="hourCCH"
-        categories={["valueDouble"]}
+        data={data}
+        index="hour"
+        categories={["value"]}
         colors={["blue"]}
         yAxisWidth={30}
       />

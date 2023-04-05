@@ -15,16 +15,36 @@ const QUERY = gql`
 
 // NOTE: using March 19, 2023 as the date for testing purposes,
 // since the API doesn't have data for the current date.
-const today = new Date(2023, 2, 19).toISOString().split("T")[0];
+const today = new Date(2023, 2, 19);
+const HOUR_OFFSET = 2;
 
-export default function useLastMeasures() {
+const firstDayOfMonth = new Date(
+  today.getFullYear(),
+  today.getMonth(),
+  1,
+  HOUR_OFFSET
+)
+  .toISOString()
+  .split("T")[0];
+
+// YYYY-mm-dd format (korean locale)
+const lastDayOfMonth = new Date(
+  today.getFullYear(),
+  today.getMonth() + 1,
+  0,
+  HOUR_OFFSET
+)
+  .toISOString()
+  .split("T")[0];
+
+export default function useMonthMeasures() {
   const { loading, error, data } = useQuery(QUERY, {
     variables: {
-      startDate: today,
-      endDate: today,
+      startDate: firstDayOfMonth,
+      endDate: lastDayOfMonth,
     },
     client: client,
   });
 
-  return { loading, error, data: data?.dailyMeasurements[0].measurements };
+  return { loading, error, data };
 }
