@@ -1,9 +1,5 @@
 import useLastMeasures from "@/hooks/useLastMeasures";
-import {
-  CheckIcon,
-  CircleStackIcon,
-  ReceiptRefundIcon,
-} from "@heroicons/react/24/outline";
+import { CalendarDaysIcon, CalendarIcon } from "@heroicons/react/24/outline";
 import {
   Card,
   Flex,
@@ -21,9 +17,9 @@ export default function ConsumptionGraph() {
       <Flex>
         <Title>Tu consumo</Title>
         <Toggle defaultValue="1" onValueChange={(value) => console.log(value)}>
-          <ToggleItem value="1" text="Diario" icon={CheckIcon} />
-          <ToggleItem value="2" text="Mensual" icon={CircleStackIcon} />
-          <ToggleItem value="3" text="Anual" icon={ReceiptRefundIcon} />
+          <ToggleItem value="1" text="Hoy" />
+          <ToggleItem value="2" text="Abril" />
+          <ToggleItem value="3" text="2023" />
         </Toggle>
       </Flex>
       <LineChart
