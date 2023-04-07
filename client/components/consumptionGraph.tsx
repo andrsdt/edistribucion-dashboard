@@ -19,9 +19,9 @@ export default function ConsumptionGraph() {
       <Flex>
         <Title>Tu consumo</Title>
         <Toggle defaultValue="1" onValueChange={(value) => console.log(value)}>
-          <ToggleItem value="1" text="Hoy" />
-          <ToggleItem value="2" text="Abril" />
-          <ToggleItem value="3" text="2023" />
+          <ToggleItem value="1" text="Diario" />
+          <ToggleItem value="2" text="Mensual" />
+          <ToggleItem value="3" text="Anual" />
         </Toggle>
       </Flex>
       <LineChart
