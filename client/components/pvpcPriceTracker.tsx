@@ -13,9 +13,9 @@ export default function PvpcPriceTracker() {
     <Card className="mx-auto">
       <Flex justifyContent="between">
         <Title>PVPC - Precio de hoy</Title>
-        <Link className="underline" href="#">
+        {/* <Link className="underline" href="#">
           Historial
-        </Link>
+        </Link> */}
       </Flex>
       <Text>
         Fuente:{" "}

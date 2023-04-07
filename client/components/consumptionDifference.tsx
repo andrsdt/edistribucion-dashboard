@@ -81,7 +81,7 @@ export default function ConsumptionDifference() {
           className="scale-90 origin-top-right"
         >
           <ToggleItem value="kwh" icon={LightBulbIcon} />
-          <ToggleItem value="eur" icon={BanknotesIcon} />
+          {/* <ToggleItem value="eur" icon={BanknotesIcon} /> */}
         </Toggle>
       </Flex>
       <Flex
