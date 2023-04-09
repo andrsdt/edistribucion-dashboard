@@ -10,7 +10,9 @@ const QUERY = gql`
   }
 `;
 
-const month = "2023-04-01"
+const currentDate = new Date();
+currentDate.setDate(1);
+const month = currentDate.toISOString().slice(0, 10);
 
 export default function useAccumulatedMonthly() {
   const { loading, error, data } = useQuery(QUERY, {
