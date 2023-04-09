@@ -128,13 +128,11 @@ def get_accumulated_electricity_data(date_str: str):
    # convert date to datetime
     date = format_date_dashes(date_str)
 
-    # Find one for the date. It does not matter if it is not complete
-    # A not complete montly accumulated value can be used for the "Consumo" board
-    accumulated_monthly_data = accumulated_monthly.find_one({"date": date})
+    # Check for the data in that date and if it is complete
+    accumulated_monthly_data = accumulated_monthly.find_one({"date": date, "complete": True})
 
     if accumulated_monthly_data:
         print(f"Found cached accumulated electricity data for date {date}")
-        print(accumulated_monthly_data)
     else:
         print(f"Fetching electricity data for all the month in {date}")
         # First we get the number of days the month has
@@ -167,12 +165,13 @@ def get_accumulated_electricity_data(date_str: str):
     #             accumulated_value += hora["valueDouble"]
 
         # Finally we insert the new document in the collection
-        accumulated_monthly.insert_one(
-            {
-                "date": date,
+        accumulated_monthly.update_one(
+            {"date": date},
+            {"$set": {
                 "complete": month_is_complete(electricity_data),
-                "accumulatedValue": result[0]['accumulatedValue'],
-            }
+                "accumulatedValue": result[0]['accumulatedValue']
+            }},
+            upsert=True
         )
         print(f"Cached accumulated electricity data for date {date}")
         accumulated_monthly_data = accumulated_monthly.find_one({"date": date})
@@ -180,10 +179,63 @@ def get_accumulated_electricity_data(date_str: str):
     return accumulated_monthly_data
 
 
+def get_year_accumulated_electricity_data(year: int):
+    start_date = datetime(year, 1, 1)
+    end_date = start_date.replace(month=12,day=31)
+
+    electricity_data = list(accumulated_monthly.find({"date": {"$gte": start_date, "$lt": end_date}}))
+
+    # If the year asked is the current year this will always be False since the information wont't be complete
+    # TODO: check if this is what we want
+    if len(electricity_data) == 12:
+        print(f"Found cached electricity data for year {year}")
+    else:
+        # Makes sure all the data available in the year is up in the cache
+        #TODO: At the moment this gives an error becuase of the change of contract at the beggining of the year
+        year_str = str(year)
+        start_date_str = year_str + "-02-01"
+        end_date_str = year_str + "-12-31"
+        get_electricity_data_interval(start_date_str, end_date_str)
+
+
+        # Gets the accumulated value of all the months available in the year
+        # Also get if the month is complete or not
+        # start_date = datetime(year, 1, 1)
+        # end_date = start_date.replace(month=12,day=31)
+        pipeline = [
+            {"$match": {"date": {"$gte": start_date, "$lt": end_date}}},
+            {"$project": {"year_month": {"$dateToString": {"format": "%Y-%m", "date": "$date"}}, "complete": "$complete", "data": 1}},
+            {"$unwind": "$data"},
+            {"$group": {"_id": {"year_month": "$year_month", "complete": "$complete"},
+                        "days": {"$sum": 1},
+                        "total_value": {"$sum": "$data.valueDouble"}}},
+            {"$group": {"_id": "$_id.year_month",
+                        "complete": {"$sum": {"$cond": [{"$eq": ["$_id.complete", True]}, "$days", 0]}},
+                        "total": {"$sum": "$days"},
+                        "accumulatedValue": {"$sum": "$total_value"}}},
+            {"$project": {"_id": 1, "complete": {"$eq": ["$total", "$complete"]}, "accumulatedValue": 1}},
+            {"$sort": {"_id": 1}}
+        ]
+        result = list(electricity_collection.aggregate(pipeline))
+        
+        # Updates the documents in the collection
+        # Insert the new data if it wasn't there
+        for doc in result:
+            date = datetime.strptime(doc['_id'], '%Y-%m')
+            filter_query = {"date": date}
+            update_query = {"$set": {"complete": doc["complete"], "accumulatedValue": doc["accumulatedValue"]}}
+            accumulated_monthly.update_one(filter_query, update_query, upsert=True)
+
+        print(f"Cached accumulated electricity data for year {year}")
+        electricity_data = list(accumulated_monthly.find({"date": {"$gte": start_date, "$lt": end_date}}))
+
+    return electricity_data
+
 if __name__ == "__main__":
     # These functions will try to fetch data from MongoDB.
     # If not present, it will fetch from the external API and update the MongoDB cache
     # get_electricity_data("22/02/2023")
     # get_electricity_data_interval("03/02/2023", "06/02/2023")
     # get_accumulated_electricity_data("2023-04-01")
+    # get_year_accumulated_electricity_data(2023)
     pass
