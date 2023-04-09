@@ -16,6 +16,12 @@ def data_is_complete(electricity_data: dict) -> bool:
     return all("valueDouble" in obj for obj in electricity_data)
 
 
+# month_is_complete will be True if the data es complete (complete = true is present in all the objects)
+# since the variable electricity_data_month will only be all the days in the same month, it is safe to just check the complete attribute
+def month_is_complete(electricity_data_month: dict) -> bool:
+    return all(obj["complete"] == True for obj in electricity_data_month)
+
+
 # Given a list of datetimes, group them by those who are consecutive and 
 def group_datetimes_by_consecutive_days(datetimes: list):
     if not datetimes:
