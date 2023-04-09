@@ -1,4 +1,6 @@
+from datetime import timedelta, datetime
 import graphene
+from dateutil.relativedelta import relativedelta
 
 from worker import get_electricity_data_interval, get_year_accumulated_electricity_data, get_accumulated_electricity_data
 
@@ -22,6 +24,13 @@ class AccumulatedData(graphene.ObjectType):
     accumulatedValue = graphene.Float()
 
 
+# TODO: At the moment is not the difference to the same period of the previous month
+class ConsumptionDifference(graphene.ObjectType):
+    accumulativeData = graphene.List(AccumulatedData)
+    delta = graphene.String()
+    deltaType = graphene.String()
+
+
 class Query(graphene.ObjectType):
     daily_measurements = graphene.List(
         DailyMeasurements, start_date=graphene.String(), end_date=graphene.String()
@@ -34,6 +43,8 @@ class Query(graphene.ObjectType):
     accumulated_monthly_data = graphene.List(
         AccumulatedData, month=graphene.String()
     )
+
+    consumption_difference = graphene.Field(ConsumptionDifference, month=graphene.String())
 
     def resolve_daily_measurements(self, info, start_date=None, end_date=None):
 
@@ -82,6 +93,44 @@ class Query(graphene.ObjectType):
         ))
 
         return accumulated_monthly_data
+    
+    def resolve_consumption_difference(self, info, month=None):
+ 
+        result = get_accumulated_electricity_data(month)
+
+        consumption_difference = []
+        consumption_difference.append(AccumulatedData(
+            date=result["date"].strftime("%Y-%m"),
+            accumulatedValue=result["accumulatedValue"]
+        ))
+
+        actual_value = result["accumulatedValue"]
+
+        month_obj = datetime.strptime(month, "%Y-%m-%d")
+        previous_month_obj = month_obj - relativedelta(months=1)
+        previous_month_str = previous_month_obj.strftime("%Y-%m-%d")
+        
+        result = get_accumulated_electricity_data(previous_month_str)
+
+        consumption_difference.append(AccumulatedData(
+            date=result["date"].strftime("%Y-%m"),
+            accumulatedValue=result["accumulatedValue"]
+        ))
+
+        prev_value = result["accumulatedValue"]
+
+        delta = round((actual_value - prev_value) / prev_value * 100, 2)
+        delta_type = ""
+        if delta > 0:
+            delta_type = "increase"
+        else:
+            delta_type = "decrease"
+
+        return ConsumptionDifference(
+            accumulativeData=consumption_difference,
+            delta=str(delta)+'%',
+            deltaType=delta_type
+        )
 
 
 schema = graphene.Schema(query=Query)

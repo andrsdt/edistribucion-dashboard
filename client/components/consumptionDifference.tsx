@@ -1,3 +1,4 @@
+import useConsumptionDifference from "@/hooks/useConsumptionDifference";
 import { BanknotesIcon, LightBulbIcon } from "@heroicons/react/24/outline";
 import {
   BadgeDelta,
@@ -51,6 +52,7 @@ const categories: {
 ];
 
 export default function ConsumptionDifference() {
+  const { loading, error, data } = useConsumptionDifference();
   const [mode, setMode] = useState<"kwh" | "eur">("kwh");
 
   const kwhItem = {
@@ -71,13 +73,16 @@ export default function ConsumptionDifference() {
 
   const item = mode === "kwh" ? kwhItem : eurItem;
 
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error :(</p>;
+
   return (
     <Card key={item.title} className="h-full">
       <Flex justifyContent="between">
-        <Text className="mb-2">{item.title}</Text>
+        <Text className="mb-2">Consumo</Text>
         <Toggle
           defaultValue={mode}
-          onValueChange={(value) => setMode(value as "kwh" | "eur")}
+          onValueChange={(value) => setMode(value as 'kwh' | 'eur')}
           className="scale-90 origin-top-right"
         >
           <ToggleItem value="kwh" icon={LightBulbIcon} />
@@ -89,16 +94,20 @@ export default function ConsumptionDifference() {
         alignItems="baseline"
         className="truncate space-x-3"
       >
-        <Metric className="mb-2.5">{item.metric}</Metric>
-        <Text className="truncate">antes {item.metricPrev}</Text>
+        <Metric className="mb-2.5">
+          {data.accumulativeData[0]['accumulatedValue']}
+        </Metric>
+        <Text className="truncate">
+          antes {data.accumulativeData[1]['accumulatedValue']}
+        </Text>
       </Flex>
       <Flex justifyContent="start" className="space-x-2 mt-4">
         <BadgeDelta
-          deltaType={item.deltaType as DeltaType}
+          deltaType={data.deltaType as DeltaType}
           isIncreasePositive={false}
         />
         <Flex justifyContent="start" className="space-x-1 truncate">
-          <Text color={colors[item.deltaType]}>{item.delta}</Text>
+          <Text color={colors[data.deltaType]}>{data.delta}</Text>
           <Text className="truncate"> al mismo periodo del último mes </Text>
         </Flex>
       </Flex>
