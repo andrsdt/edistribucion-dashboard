@@ -18,7 +18,7 @@ class DailyMeasurements(graphene.ObjectType):
     measurements = graphene.List(Measurement)
 
 class AccumulatedData(graphene.ObjectType):
-    date = graphene.Date()
+    date = graphene.String()
     accumulatedValue = graphene.Float()
 
 
@@ -64,7 +64,7 @@ class Query(graphene.ObjectType):
         for result in data:
             accumulated_data.append(
                 AccumulatedData(
-                    date=result["date"],
+                    date=result["date"].strftime("%Y-%m"),
                     accumulatedValue=result["accumulatedValue"]
                 )
             )
@@ -77,7 +77,7 @@ class Query(graphene.ObjectType):
 
         accumulated_monthly_data = []
         accumulated_monthly_data.append(AccumulatedData(
-            date=result["date"],
+            date=result["date"].strftime("%Y-%m"),
             accumulatedValue=result["accumulatedValue"]
         ))
 
