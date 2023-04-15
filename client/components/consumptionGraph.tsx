@@ -13,8 +13,6 @@ import {
 
 import { useState } from 'react';
 
-
-// TODO: get latest available data for the linear chart
 // TODO: possibility to change the month/day/year data being displayed
 export default function ConsumptionGraph() {
   const { loading, error, data } = useLastMeasures();

@@ -4,7 +4,7 @@ from datetime import timedelta, datetime
 import calendar
 
 from Edistribucion import Edistribucion
-from mongo import electricity_collection, accumulated_monthly
+from mongo import electricity_collection, accumulated_monthly, accumulated_daily
 from utils import (
     data_is_complete,
     month_is_complete,
@@ -19,6 +19,7 @@ from utils import (
 # create index to avoid duplicates by date
 electricity_collection.create_index("date", unique=True)
 accumulated_monthly.create_index("date", unique=True)
+accumulated_daily.create_index("date", unique=True)
 edis = Edistribucion(debug_level=logging.DEBUG)
 
 
@@ -193,7 +194,7 @@ def get_year_accumulated_electricity_data(year: int):
         # Makes sure all the data available in the year is up in the cache
         #TODO: At the moment this gives an error becuase of the change of contract at the beggining of the year
         year_str = str(year)
-        start_date_str = year_str + "-02-01"
+        start_date_str = year_str + "-01-01"
         end_date_str = year_str + "-12-31"
         get_electricity_data_interval(start_date_str, end_date_str)
 
@@ -231,11 +232,52 @@ def get_year_accumulated_electricity_data(year: int):
 
     return electricity_data
 
+
+def get_day_accumulated_electricity_data(date_str: str):
+   # convert date to datetime
+    date = format_date_dashes(date_str)
+
+    # Check for the data in that date and if it is complete
+    accumulated_daily_data = accumulated_daily.find_one({"date": date, "complete": True})
+
+    if accumulated_daily_data:
+        print(f"Found cached accumulated daily electricity data for date {date}")
+    else:
+        print(f"Fetching electricity data for all the month in {date}")
+        
+        electricity_data = get_electricity_data(date_str)
+    
+        # With this data we calculate the accumulated value for the whole month
+        # Crea la lista de etapas de agregación
+        pipeline = [
+            {"$match": {"date": date}},
+            {"$unwind": "$data"},
+            {"$group": {"_id": None, "accumulatedValue": {"$sum": "$data.valueDouble"}}}
+        ]
+
+        # Ejecutamos la agregación y devolvemos el resultado
+        result = list(electricity_collection.aggregate(pipeline))
+
+        # Finally we insert the new document in the collection
+        accumulated_daily.update_one(
+            {"date": date},
+            {"$set": {
+                "complete": data_is_complete(electricity_data["data"]),
+                "accumulatedValue": result[0]['accumulatedValue']
+            }},
+            upsert=True
+        )
+        print(f"Cached accumulated daily electricity data for date {date}")
+        accumulated_daily_data = accumulated_daily.find_one({"date": date})
+
+    return accumulated_daily_data
+
 if __name__ == "__main__":
     # These functions will try to fetch data from MongoDB.
     # If not present, it will fetch from the external API and update the MongoDB cache
     # get_electricity_data("22/02/2023")
     # get_electricity_data_interval("03/02/2023", "06/02/2023")
-    # get_accumulated_electricity_data("2023-04-01")
+    # get_accumulated_electricity_data("2023-03-01")
     # get_year_accumulated_electricity_data(2023)
+    get_day_accumulated_electricity_data("2023-04-15")
     pass

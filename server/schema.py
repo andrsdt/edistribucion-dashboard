@@ -1,8 +1,10 @@
 from datetime import timedelta, datetime
 import graphene
 from dateutil.relativedelta import relativedelta
+from utils import format_date_dashes
+import calendar
 
-from worker import get_electricity_data_interval, get_year_accumulated_electricity_data, get_accumulated_electricity_data
+from worker import get_electricity_data_interval, get_year_accumulated_electricity_data, get_accumulated_electricity_data, get_day_accumulated_electricity_data
 
 class Measurement(graphene.ObjectType):
     date = graphene.Date()
@@ -92,17 +94,68 @@ class Query(graphene.ObjectType):
 
         return accumulated_data
     
+    # def resolve_accumulated_monthly_data(self, info, month=None):
+
+    #     result = get_accumulated_electricity_data(month)
+
+    #     accumulated_monthly_data = []
+    #     accumulated_monthly_data.append(AccumulatedData(
+    #         date=result["date"].strftime("%Y-%m"),
+    #         accumulatedValue=result["accumulatedValue"]
+    #     ))
+
+    #     return accumulated_monthly_data
+    
+
+    ### TODO: ANOTHER WAY OF MAKING THE GRAPH JUST WITH THE AVAILABLE DATA
+    # def resolve_accumulated_monthly_data(self, info, month=None):
+    #     start_date = datetime.strptime(month, "%Y-%m-%d").date()
+
+    #     current_date = datetime.today()
+    #     if start_date.year == current_date.year and start_date.month == current_date.month:
+    #         end_date_str = start_date.replace(day=current_date.day-1).strftime("%Y-%m-%d")
+    #         end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    #     else:
+    #         num_days = calendar.monthrange(start_date.year, start_date.month)[1]
+    #         end_date_str = start_date.replace(day=num_days).strftime("%Y-%m-%d")
+    #         end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+
+    #     # Creamos un bucle que itere sobre los días intermedios
+    #     current_date = start_date
+    #     accumulated_monthly_data = []
+    #     while current_date <= end_date:
+    #         result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
+    #         accumulated_monthly_data.append(AccumulatedData(
+    #             date=result["date"].strftime("%Y-%m-%d"),
+    #             accumulatedValue=result["accumulatedValue"]
+    #         ))
+    #         current_date += timedelta(days=1)
+
+    #     return accumulated_monthly_data
+
     def resolve_accumulated_monthly_data(self, info, month=None):
 
-        result = get_accumulated_electricity_data(month)
+        start_date = datetime.strptime(month, "%Y-%m-%d").date()
 
         accumulated_monthly_data = []
-        accumulated_monthly_data.append(AccumulatedData(
-            date=result["date"].strftime("%Y-%m"),
-            accumulatedValue=result["accumulatedValue"]
-        ))
+        num_days = calendar.monthrange(start_date.year, start_date.month)[1]
+        for i in range(1, num_days+1):
+            current_date = datetime(start_date.year, start_date.month, i)
+            if current_date.date() < datetime.today().date():
+                result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
+                accumulated_monthly_data.append(AccumulatedData(
+                    date=result["date"].strftime("%Y-%m-%d"),
+                    accumulatedValue=result["accumulatedValue"]
+                ))   
+            else:
+                accumulated_monthly_data.append(AccumulatedData(
+                    date=current_date.strftime("%Y-%m-%d"),
+                    accumulatedValue=0
+                ))
 
+        print(accumulated_monthly_data)
         return accumulated_monthly_data
+
     
     def resolve_consumption_difference(self, info, month=None):
  
