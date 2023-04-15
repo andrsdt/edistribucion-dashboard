@@ -9,8 +9,8 @@ export default async function pvpcHandler(
   const { method } = req;
   if (method === "GET") {
     const response = await axios.get(
-      // "https://api.preciodelaluz.org/v1/prices/all?zone=PCB" // TODO: use this URL instead in production
-      "http://localhost:3000/data/pvpc.json"
+       "https://api.preciodelaluz.org/v1/prices/all?zone=PCB" // TODO: use this URL instead in production
+      // "http://localhost:3000/data/pvpc.json"
     );
     const { data } = response;
     res.status(200).json(data);

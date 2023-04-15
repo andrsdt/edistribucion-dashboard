@@ -16,3 +16,4 @@ client = MongoClient(MONGODB_URI)
 db = client["mydatabase"]
 
 electricity_collection = db["electricity"]
+accumulated_monthly = db["accumulated_monthly"]
