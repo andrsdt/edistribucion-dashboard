@@ -72,13 +72,23 @@ class Query(graphene.ObjectType):
         data = get_year_accumulated_electricity_data(year)
 
         accumulated_data = []
-        for result in data:
-            accumulated_data.append(
-                AccumulatedData(
-                    date=result["date"].strftime("%Y-%m"),
-                    accumulatedValue=result["accumulatedValue"]
+        num_months = 0
+        while num_months < 12:
+            if num_months < len(data):
+                accumulated_data.append(
+                    AccumulatedData(
+                        date=data[num_months]["date"].strftime("%Y-%m"),
+                        accumulatedValue=data[num_months]["accumulatedValue"]
+                    )
                 )
-            )
+            else:
+                accumulated_data.append(
+                    AccumulatedData(
+                        date=datetime(year=year, month=num_months+1, day=1).strftime("%Y-%m"),
+                        accumulatedValue=0
+                    )
+                )
+            num_months += 1
 
         return accumulated_data
     
