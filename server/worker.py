@@ -144,14 +144,12 @@ def get_accumulated_electricity_data(date_str: str):
         electricity_data = get_electricity_data_interval(date_str, end_date_str)
     
         # With this data we calculate the accumulated value for the whole month
-        # Crea la lista de etapas de agregación
         pipeline = [
             {"$match": {"date": {"$gte": date, "$lte": date.replace(day=num_days)}}},
             {"$unwind": "$data"},
             {"$group": {"_id": None, "accumulatedValue": {"$sum": "$data.valueDouble"}}}
         ]
 
-        # Ejecuta la agregación y devuelve el resultado
         result = list(electricity_collection.aggregate(pipeline))
 
         # This is another way for getting the accumulated value
@@ -243,26 +241,23 @@ def get_day_accumulated_electricity_data(date_str: str):
     if accumulated_daily_data:
         print(f"Found cached accumulated daily electricity data for date {date}")
     else:
-        print(f"Fetching electricity data for all the month in {date}")
+        print(f"Fetching day electricity data for {date}")
         
-        electricity_data = get_electricity_data(date_str)
+        electricity_data = get_electricity_data_interval(date_str,date_str)
     
         # With this data we calculate the accumulated value for the whole month
-        # Crea la lista de etapas de agregación
         pipeline = [
             {"$match": {"date": date}},
             {"$unwind": "$data"},
             {"$group": {"_id": None, "accumulatedValue": {"$sum": "$data.valueDouble"}}}
         ]
 
-        # Ejecutamos la agregación y devolvemos el resultado
         result = list(electricity_collection.aggregate(pipeline))
 
-        # Finally we insert the new document in the collection
         accumulated_daily.update_one(
             {"date": date},
             {"$set": {
-                "complete": data_is_complete(electricity_data["data"]),
+                "complete": data_is_complete(electricity_data),
                 "accumulatedValue": result[0]['accumulatedValue']
             }},
             upsert=True
@@ -279,5 +274,5 @@ if __name__ == "__main__":
     # get_electricity_data_interval("03/02/2023", "06/02/2023")
     # get_accumulated_electricity_data("2023-03-01")
     # get_year_accumulated_electricity_data(2023)
-    get_day_accumulated_electricity_data("2023-04-15")
+    # get_day_accumulated_electricity_data("2023-04-16")
     pass

@@ -26,7 +26,6 @@ class AccumulatedData(graphene.ObjectType):
     accumulatedValue = graphene.Float()
 
 
-# TODO: At the moment is not the difference to the same period of the previous month
 class ConsumptionDifference(graphene.ObjectType):
     accumulativeData = graphene.List(AccumulatedData)
     delta = graphene.String()
@@ -93,45 +92,7 @@ class Query(graphene.ObjectType):
             num_months += 1
 
         return accumulated_data
-    
-    # def resolve_accumulated_monthly_data(self, info, month=None):
 
-    #     result = get_accumulated_electricity_data(month)
-
-    #     accumulated_monthly_data = []
-    #     accumulated_monthly_data.append(AccumulatedData(
-    #         date=result["date"].strftime("%Y-%m"),
-    #         accumulatedValue=result["accumulatedValue"]
-    #     ))
-
-    #     return accumulated_monthly_data
-    
-
-    ### TODO: ANOTHER WAY OF MAKING THE GRAPH JUST WITH THE AVAILABLE DATA
-    # def resolve_accumulated_monthly_data(self, info, month=None):
-        # start_date = datetime.strptime(month, "%Y-%m-%d").date()
-
-        # current_date = datetime.today()
-        # if start_date.year == current_date.year and start_date.month == current_date.month:
-        #     end_date_str = start_date.replace(day=current_date.day-1).strftime("%Y-%m-%d")
-        #     end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-        # else:
-        #     num_days = calendar.monthrange(start_date.year, start_date.month)[1]
-        #     end_date_str = start_date.replace(day=num_days).strftime("%Y-%m-%d")
-        #     end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
-        # # Creamos un bucle que itere sobre los días intermedios
-        # current_date = start_date
-        # accumulated_monthly_data = []
-        # while current_date <= end_date:
-        #     result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
-        #     accumulated_monthly_data.append(AccumulatedData(
-        #         date=result["date"].strftime("%Y-%m-%d"),
-        #         accumulatedValue=result["accumulatedValue"]
-        #     ))
-        #     current_date += timedelta(days=1)
-
-    #     return accumulated_monthly_data
 
     def resolve_accumulated_monthly_data(self, info, month=None):
 
@@ -141,7 +102,7 @@ class Query(graphene.ObjectType):
         num_days = calendar.monthrange(start_date.year, start_date.month)[1]
         for i in range(1, num_days+1):
             current_date = datetime(start_date.year, start_date.month, i)
-            if current_date.date() < datetime.today().date():
+            if current_date.date() <= datetime.today().date():
                 result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
                 accumulated_monthly_data.append(AccumulatedData(
                     date=result["date"].strftime("%Y-%m-%d"),
@@ -154,45 +115,6 @@ class Query(graphene.ObjectType):
                 ))
 
         return accumulated_monthly_data
-
-    
-    # def resolve_consumption_difference(self, info, month=None):
- 
-    #     result = get_accumulated_electricity_data(month)
-
-    #     consumption_difference = []
-    #     consumption_difference.append(AccumulatedData(
-    #         date=result["date"].strftime("%Y-%m"),
-    #         accumulatedValue=result["accumulatedValue"]
-    #     ))
-
-    #     actual_value = result["accumulatedValue"]
-
-    #     month_obj = datetime.strptime(month, "%Y-%m-%d")
-    #     previous_month_obj = month_obj - relativedelta(months=1)
-    #     previous_month_str = previous_month_obj.strftime("%Y-%m-%d")
-        
-    #     result = get_accumulated_electricity_data(previous_month_str)
-
-    #     consumption_difference.append(AccumulatedData(
-    #         date=result["date"].strftime("%Y-%m"),
-    #         accumulatedValue=result["accumulatedValue"]
-    #     ))
-
-    #     prev_value = result["accumulatedValue"]
-
-    #     delta = round((actual_value - prev_value) / prev_value * 100, 2)
-    #     delta_type = ""
-    #     if delta > 0:
-    #         delta_type = "increase"
-    #     else:
-    #         delta_type = "decrease"
-
-    #     return ConsumptionDifference(
-    #         accumulativeData=consumption_difference,
-    #         delta=str(delta)+'%',
-    #         deltaType=delta_type
-    #     )
 
     def resolve_consumption_difference(self, info, month=None):
         start_date = datetime.strptime(month, "%Y-%m-%d").date()
@@ -217,19 +139,13 @@ class Query(graphene.ObjectType):
 
         month_obj = datetime.strptime(month, "%Y-%m-%d")
         previous_month_obj = month_obj - relativedelta(months=1)
-        previous_month_str = previous_month_obj.strftime("%Y-%m-%d")
-
-        print(previous_month_str)
         
         end_date_str = previous_month_obj.replace(day=current_date.day-1).strftime("%Y-%m-%d")
         end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-        print(end_date_str)
-
         current_date = previous_month_obj.date()
         accumulated_data = 0
-        print(current_date)
-        while current_date <= end_date:
+        while current_date < end_date:
             result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
             accumulated_data += result["accumulatedValue"]
             current_date += timedelta(days=1)
@@ -237,27 +153,14 @@ class Query(graphene.ObjectType):
 
         consumption_difference.append(AccumulatedData(
             date=end_date.strftime("%Y-%m-%d"),
-            accumulatedValue=accumulated_data
+            accumulatedValue=round(accumulated_data, 2)
         ))
 
         prev_value = accumulated_data
 
-        print("PRUEBA")
-        print(accumulated_data)
-        print(prev_value)
-
         delta = round((current_value - prev_value) / prev_value * 100, 2)
-        delta_type = ""
-        if delta > 0:
-            delta_type = "increase"
-        else:
-            delta_type = "decrease"
+        delta_type = "increase" if delta > 0 else "decrease"
 
-        print(ConsumptionDifference(
-            accumulativeData=consumption_difference,
-            delta=str(delta)+'%',
-            deltaType=delta_type
-        ))
         return ConsumptionDifference(
             accumulativeData=consumption_difference,
             delta=str(delta)+'%',

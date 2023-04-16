@@ -17,8 +17,6 @@ import { useState } from 'react';
 export default function ConsumptionGraph() {
   const { loading, error, data } = useLastMeasures();
   const { barAnnualChartData } = useAccumulatedAnnual();
-
-  // TODO: maybe change this chart for one that adds more value, or maybe get the data for each day of the month
   const { barMonthlyChartData } = useAccumulatedMonthly();
   
   const [chartType, setChartType] = useState('1');
