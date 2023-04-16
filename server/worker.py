@@ -243,7 +243,7 @@ def get_day_accumulated_electricity_data(date_str: str):
     else:
         print(f"Fetching day electricity data for {date}")
         
-        electricity_data = get_electricity_data_interval(date_str,date_str)
+        electricity_data = list(get_electricity_data_interval(date_str,date_str))
     
         # With this data we calculate the accumulated value for the whole month
         pipeline = [
@@ -257,11 +257,12 @@ def get_day_accumulated_electricity_data(date_str: str):
         accumulated_daily.update_one(
             {"date": date},
             {"$set": {
-                "complete": data_is_complete(electricity_data),
+                "complete": data_is_complete(list(electricity_data)[0]["data"]),
                 "accumulatedValue": result[0]['accumulatedValue']
             }},
             upsert=True
         )
+        
         print(f"Cached accumulated daily electricity data for date {date}")
         accumulated_daily_data = accumulated_daily.find_one({"date": date})
 
@@ -274,5 +275,5 @@ if __name__ == "__main__":
     # get_electricity_data_interval("03/02/2023", "06/02/2023")
     # get_accumulated_electricity_data("2023-03-01")
     # get_year_accumulated_electricity_data(2023)
-    # get_day_accumulated_electricity_data("2023-04-16")
+    # get_day_accumulated_electricity_data("2023-03-02")
     pass

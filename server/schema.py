@@ -1,10 +1,10 @@
 from datetime import timedelta, datetime
 import graphene
 from dateutil.relativedelta import relativedelta
-from utils import format_date_dashes
 import calendar
+from utils import get_end_and_previous_date
 
-from worker import get_electricity_data_interval, get_year_accumulated_electricity_data, get_accumulated_electricity_data, get_day_accumulated_electricity_data
+from worker import get_electricity_data_interval, get_year_accumulated_electricity_data, get_day_accumulated_electricity_data
 
 class Measurement(graphene.ObjectType):
     date = graphene.Date()
@@ -119,41 +119,34 @@ class Query(graphene.ObjectType):
     def resolve_consumption_difference(self, info, month=None):
         start_date = datetime.strptime(month, "%Y-%m-%d").date()
         current_date = datetime.today().date()
-        end_date_str = start_date.replace(day=current_date.day-1).strftime("%Y-%m-%d")
-        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        (end_date, previous_month_obj, previous_end_date) = get_end_and_previous_date(start_date, current_date)
 
-        current_date = start_date
+        iterator_date = start_date
         accumulated_data = 0
-        while current_date <= end_date:
-            result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
+        while iterator_date <= end_date:
+            result = get_day_accumulated_electricity_data(iterator_date.strftime("%Y-%m-%d"))
             accumulated_data += result["accumulatedValue"]
-            current_date += timedelta(days=1)
+            iterator_date += timedelta(days=1)
 
         consumption_difference = []
         consumption_difference.append(AccumulatedData(
             date=end_date.strftime("%Y-%m-%d"),
-            accumulatedValue=round(accumulated_data, 2)
+            accumulatedValue=round(accumulated_data, 3)
         ))
 
         current_value = accumulated_data
 
-        month_obj = datetime.strptime(month, "%Y-%m-%d")
-        previous_month_obj = month_obj - relativedelta(months=1)
-        
-        end_date_str = previous_month_obj.replace(day=current_date.day-1).strftime("%Y-%m-%d")
-        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
-        current_date = previous_month_obj.date()
+        iterator_date = previous_month_obj.date()
         accumulated_data = 0
-        while current_date < end_date:
-            result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
+        while iterator_date <= previous_end_date:
+            result = get_day_accumulated_electricity_data(iterator_date.strftime("%Y-%m-%d"))
             accumulated_data += result["accumulatedValue"]
-            current_date += timedelta(days=1)
+            iterator_date += timedelta(days=1)
         
 
         consumption_difference.append(AccumulatedData(
-            date=end_date.strftime("%Y-%m-%d"),
-            accumulatedValue=round(accumulated_data, 2)
+            date=previous_end_date.strftime("%Y-%m-%d"),
+            accumulatedValue=round(accumulated_data, 3)
         ))
 
         prev_value = accumulated_data
@@ -166,6 +159,5 @@ class Query(graphene.ObjectType):
             delta=str(delta)+'%',
             deltaType=delta_type
         )
-
 
 schema = graphene.Schema(query=Query)
