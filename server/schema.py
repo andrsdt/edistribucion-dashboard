@@ -102,7 +102,7 @@ class Query(graphene.ObjectType):
         num_days = calendar.monthrange(start_date.year, start_date.month)[1]
         for i in range(1, num_days+1):
             current_date = datetime(start_date.year, start_date.month, i)
-            if current_date.date() <= datetime.today().date():
+            if current_date.date() < datetime.today().date():
                 result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
                 accumulated_monthly_data.append(AccumulatedData(
                     date=result["date"].strftime("%Y-%m-%d"),
