@@ -17,12 +17,12 @@ import { useState } from 'react';
 export default function ConsumptionGraph() {
   const { loading, error, data } = useLastMeasures();
   const { barAnnualChartData } = useAccumulatedAnnual();
-  const { barMonthlyChartData } = useAccumulatedMonthly();
+  const { loadingMonthly, errorMonthly, barMonthlyChartData } = useAccumulatedMonthly();
   
   const [chartType, setChartType] = useState('1');
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error :(</p>;
+  if (loading || loadingMonthly) return <p>Loading...</p>;
+  if (error || errorMonthly) return <p>Error :(</p>;
 
   const renderChart = () => {
     switch (chartType) {

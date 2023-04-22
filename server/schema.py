@@ -48,24 +48,31 @@ class Query(graphene.ObjectType):
     consumption_difference = graphene.Field(ConsumptionDifference, month=graphene.String())
 
     def resolve_daily_measurements(self, info, start_date=None, end_date=None):
-
-        results = get_electricity_data_interval(start_date, end_date)
-
-        daily_measurements = []
-        for result in results:
-            date = result["date"] # dd/mm/yyyy (str)
-            measurements = [{
-                    "hour": hourly_data["hourCCH"] - 1,
-                    "value": hourly_data["valueDouble"] if "valueDouble" in hourly_data else None,
-                } for hourly_data in result["data"]]
-                
-            daily_measurements.append(
-                DailyMeasurements(
-                    date=date,
-                    measurements=measurements
+        try:
+            results = get_electricity_data_interval(start_date, end_date)
+            daily_measurements = []
+            for result in results:
+                date = result["date"] # dd/mm/yyyy (str)
+                measurements = [{
+                        "hour": hourly_data["hourCCH"] - 1,
+                        "value": hourly_data["valueDouble"] if "valueDouble" in hourly_data else None,
+                    } for hourly_data in result["data"]]
+                    
+                daily_measurements.append(
+                    DailyMeasurements(
+                        date=date,
+                        measurements=measurements
+                    )
                 )
-            )
+        except:
+            daily_measurements = []
+            measurements = [{"hour": h, "value": 0} for h in range(24)]
+            daily_measurements.append(DailyMeasurements(
+                date=datetime.strptime(start_date, "%Y-%m-%d"),
+                measurements=measurements
+            ))
 
+        print(daily_measurements)
         return daily_measurements
     
     def resolve_accumulated_data(self, info, year=None):
@@ -102,8 +109,8 @@ class Query(graphene.ObjectType):
         num_days = calendar.monthrange(start_date.year, start_date.month)[1]
         for i in range(1, num_days+1):
             current_date = datetime(start_date.year, start_date.month, i)
-            if current_date.date() < datetime.today().date():
-                result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
+            result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
+            if result["accumulatedValue"]>0:
                 accumulated_monthly_data.append(AccumulatedData(
                     date=result["date"].strftime("%Y-%m-%d"),
                     accumulatedValue=result["accumulatedValue"]
@@ -125,6 +132,9 @@ class Query(graphene.ObjectType):
         accumulated_data = 0
         while iterator_date <= end_date:
             result = get_day_accumulated_electricity_data(iterator_date.strftime("%Y-%m-%d"))
+            if not result["complete"]:
+                day_last_complete=result["date"].day
+                break
             accumulated_data += result["accumulatedValue"]
             iterator_date += timedelta(days=1)
 
@@ -139,6 +149,8 @@ class Query(graphene.ObjectType):
         iterator_date = previous_month_obj.date()
         accumulated_data = 0
         while iterator_date <= previous_end_date:
+            if iterator_date.day == day_last_complete:
+                break
             result = get_day_accumulated_electricity_data(iterator_date.strftime("%Y-%m-%d"))
             accumulated_data += result["accumulatedValue"]
             iterator_date += timedelta(days=1)
