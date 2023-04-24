@@ -230,10 +230,8 @@ def get_year_accumulated_electricity_data(year: int):
     return electricity_data
 
 
-def get_day_accumulated_electricity_data(date_str: str):
-   # convert date to datetime
-    date = format_date_dashes(date_str)
-
+def get_day_accumulated_electricity_data(date: datetime):
+    date_str = date.strftime("%Y-%m-%d")
     # Check for the data in that day and if it is complete
     accumulated_daily_data = accumulated_daily.find_one({"date": date, "complete": True})
 
@@ -282,6 +280,10 @@ def get_day_accumulated_electricity_data(date_str: str):
 def get_day_accumulated_interval(start_date_str, end_date_str):
     start_date = format_date_dashes(start_date_str)
     end_date = format_date_dashes(end_date_str)
+    iterator_date = start_date
+    while iterator_date <= end_date:
+        get_day_accumulated_electricity_data(iterator_date)
+        iterator_date = iterator_date + timedelta(days=1)
     result = list(accumulated_daily.aggregate([
         {
             "$match": {
@@ -313,6 +315,10 @@ def get_all_month_accumulated(month):
     start_date = datetime.strptime(month, "%Y-%m-%d")
     num_days = calendar.monthrange(start_date.year, start_date.month)[1]
     end_date = datetime(year=start_date.year, month=start_date.month, day=num_days)
+    iterator_date = start_date
+    while iterator_date <= end_date:
+        get_day_accumulated_electricity_data(iterator_date)
+        iterator_date = iterator_date + timedelta(days=1)
     pipeline = [
     {
         "$match": {
@@ -341,8 +347,10 @@ def get_all_month_accumulated(month):
     return result
 
 def get_all_year_accumulated(year):
+    get_year_accumulated_electricity_data(year)
     start_date = datetime(year=year, month=1, day=1)
     end_date = datetime(year=year, month=12, day=1)
+
     pipeline = [
         {
             "$match": {

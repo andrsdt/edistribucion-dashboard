@@ -4,7 +4,7 @@ from dateutil.relativedelta import relativedelta
 import calendar
 from utils import get_previous_date
 
-from worker import get_electricity_data_interval, get_year_accumulated_electricity_data, get_day_accumulated_electricity_data, get_day_accumulated_interval, get_all_month_accumulated, get_all_year_accumulated
+from worker import get_electricity_data_interval, get_day_accumulated_interval, get_all_month_accumulated, get_all_year_accumulated
 
 class Measurement(graphene.ObjectType):
     date = graphene.Date()
