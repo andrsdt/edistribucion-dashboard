@@ -45,18 +45,10 @@ def group_datetimes_by_consecutive_days(datetimes: list):
 # If the current day is not 1, it will compare the consumption until the previous day with the consumption until the same day and previous month
 # This is because the current day does not have enough information to compare
 # If the current month is 1, it will compare to december of the last year. If not, with previous month
-def get_end_and_previous_date(start_date, current_date):
-    if current_date.day == 1:
-        end_date_str = start_date.replace(day=1).strftime("%Y-%m-%d")
-    else:
-        end_date_str = start_date.replace(day=current_date.day-1).strftime("%Y-%m-%d")
-    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
+def get_previous_date(current_date):
     if current_date.month == 1:
         previous_month_obj = datetime(current_date.year-1, 12, 1)
     else:
-        previous_month_obj = datetime(current_date.year, current_date.month-1, 1)       
+        previous_month_obj = datetime(current_date.year, current_date.month-1, 1)
 
-    previous_end_date = end_date.replace(year=previous_month_obj.year, month=previous_month_obj.month, day=end_date.day)
-
-    return (end_date, previous_month_obj, previous_end_date)
+    return previous_month_obj

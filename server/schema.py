@@ -2,9 +2,9 @@ from datetime import timedelta, datetime
 import graphene
 from dateutil.relativedelta import relativedelta
 import calendar
-from utils import get_end_and_previous_date
+from utils import get_previous_date
 
-from worker import get_electricity_data_interval, get_year_accumulated_electricity_data, get_day_accumulated_electricity_data
+from worker import get_electricity_data_interval, get_year_accumulated_electricity_data, get_day_accumulated_electricity_data, get_day_accumulated_interval, get_all_month_accumulated, get_all_year_accumulated
 
 class Measurement(graphene.ObjectType):
     date = graphene.Date()
@@ -72,96 +72,55 @@ class Query(graphene.ObjectType):
                 measurements=measurements
             ))
 
-        print(daily_measurements)
         return daily_measurements
     
     def resolve_accumulated_data(self, info, year=None):
 
-        data = get_year_accumulated_electricity_data(year)
-
         accumulated_data = []
-        num_months = 0
-        while num_months < 12:
-            if num_months < len(data):
-                accumulated_data.append(
-                    AccumulatedData(
-                        date=data[num_months]["date"].strftime("%Y-%m"),
-                        accumulatedValue=data[num_months]["accumulatedValue"]
-                    )
-                )
-            else:
-                accumulated_data.append(
-                    AccumulatedData(
-                        date=datetime(year=year, month=num_months+1, day=1).strftime("%Y-%m"),
-                        accumulatedValue=0
-                    )
-                )
-            num_months += 1
+        result = get_all_year_accumulated(year)
+        for result in result:
+            accumulated_data.append(AccumulatedData(
+                    date=result["date"],
+                    accumulatedValue=result["accumulatedValue"]
+                ))  
 
         return accumulated_data
-
+    
 
     def resolve_accumulated_monthly_data(self, info, month=None):
-
-        start_date = datetime.strptime(month, "%Y-%m-%d").date()
-
         accumulated_monthly_data = []
-        num_days = calendar.monthrange(start_date.year, start_date.month)[1]
-        for i in range(1, num_days+1):
-            current_date = datetime(start_date.year, start_date.month, i)
-            result = get_day_accumulated_electricity_data(current_date.strftime("%Y-%m-%d"))
-            if result["accumulatedValue"]>0:
-                accumulated_monthly_data.append(AccumulatedData(
-                    date=result["date"].strftime("%Y-%m-%d"),
+        result = get_all_month_accumulated(month)
+        for result in result:
+            accumulated_monthly_data.append(AccumulatedData(
+                    date=result["date"],
                     accumulatedValue=result["accumulatedValue"]
-                ))   
-            else:
-                accumulated_monthly_data.append(AccumulatedData(
-                    date=current_date.strftime("%Y-%m-%d"),
-                    accumulatedValue=0
-                ))
-
+                ))  
         return accumulated_monthly_data
 
     def resolve_consumption_difference(self, info, month=None):
         start_date = datetime.strptime(month, "%Y-%m-%d").date()
         current_date = datetime.today().date()
-        (end_date, previous_month_obj, previous_end_date) = get_end_and_previous_date(start_date, current_date)
-
-        iterator_date = start_date
-        accumulated_data = 0
-        while iterator_date <= end_date:
-            result = get_day_accumulated_electricity_data(iterator_date.strftime("%Y-%m-%d"))
-            if not result["complete"]:
-                day_last_complete=result["date"].day
-                break
-            accumulated_data += result["accumulatedValue"]
-            iterator_date += timedelta(days=1)
+        previous_month_obj = get_previous_date(current_date)
+        end_date = current_date
+        accumulated_current_month = get_day_accumulated_interval(start_date.strftime("%Y-%m-%d"),end_date.strftime("%Y-%m-%d"))
 
         consumption_difference = []
         consumption_difference.append(AccumulatedData(
-            date=end_date.strftime("%Y-%m-%d"),
-            accumulatedValue=round(accumulated_data, 3)
+            date=accumulated_current_month["date"],
+            accumulatedValue=accumulated_current_month["accumulatedValue"]
         ))
 
-        current_value = accumulated_data
+        current_value = accumulated_current_month["accumulatedValue"]
 
-        iterator_date = previous_month_obj.date()
-        accumulated_data = 0
-        while iterator_date <= previous_end_date:
-            if iterator_date.day == day_last_complete:
-                break
-            result = get_day_accumulated_electricity_data(iterator_date.strftime("%Y-%m-%d"))
-            accumulated_data += result["accumulatedValue"]
-            iterator_date += timedelta(days=1)
-        
+        previous_end_date = datetime.strptime(accumulated_current_month["date"], "%Y-%m-%d").replace(year=previous_month_obj.year, month=previous_month_obj.month)
+        accumulated_prev_month = get_day_accumulated_interval(previous_month_obj.date().strftime("%Y-%m-%d"),previous_end_date.date().strftime("%Y-%m-%d")) 
 
         consumption_difference.append(AccumulatedData(
-            date=previous_end_date.strftime("%Y-%m-%d"),
-            accumulatedValue=round(accumulated_data, 3)
+            date=accumulated_prev_month["date"],
+            accumulatedValue=accumulated_prev_month["accumulatedValue"]
         ))
 
-        prev_value = accumulated_data
+        prev_value = accumulated_prev_month["accumulatedValue"]
 
         delta = round((current_value - prev_value) / prev_value * 100, 2)
         delta_type = "increase" if delta > 0 else "decrease"
