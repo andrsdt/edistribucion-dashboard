@@ -23,8 +23,8 @@ export default function useAccumulatedMonthly() {
   });
 
   return {
-    loading,
-    error,
+    loadingMonthly: loading,
+    errorMonthly: error,
     barMonthlyChartData: data?.accumulatedMonthlyData,
   };
 }

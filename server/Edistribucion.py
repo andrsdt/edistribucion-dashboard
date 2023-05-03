@@ -150,7 +150,7 @@ class Edistribucion:
         if headers:
             __headers.update(headers)
         if post == None and json == None:
-            r = self.__session.get(url, params=get, headers=__headers, cookies=cookies)
+            r = self.__session.get(url, params=get, headers=__headers, cookies=cookies, verify=False)
         else:
             r = self.__session.post(
                 url,
@@ -159,6 +159,7 @@ class Edistribucion:
                 params=get,
                 headers=__headers,
                 cookies=cookies,
+                verify=False
             )
         logging.info("Sending %s request to %s", r.request.method, r.url)
         logging.debug("Parameters: %s", r.request.url)

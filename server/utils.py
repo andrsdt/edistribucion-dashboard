@@ -38,3 +38,17 @@ def group_datetimes_by_consecutive_days(datetimes: list):
     # return a list of pairs (start,end) where start and end are datetime objects
     result = [(date_range[0], date_range[-1]) for date_range in result]
     return result
+
+
+# Given a start date and the current date, give the end_date for the consumption difference
+# If the current day is a first day of month, it will compare to the first day of the preicous month
+# If the current day is not 1, it will compare the consumption until the previous day with the consumption until the same day and previous month
+# This is because the current day does not have enough information to compare
+# If the current month is 1, it will compare to december of the last year. If not, with previous month
+def get_previous_date(current_date):
+    if current_date.month == 1:
+        previous_month_obj = datetime(current_date.year-1, 12, 1)
+    else:
+        previous_month_obj = datetime(current_date.year, current_date.month-1, 1)
+
+    return previous_month_obj

@@ -17,3 +17,4 @@ db = client["mydatabase"]
 
 electricity_collection = db["electricity"]
 accumulated_monthly = db["accumulated_monthly"]
+accumulated_daily = db["accumulated_daily"]

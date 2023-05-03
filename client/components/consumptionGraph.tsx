@@ -13,20 +13,16 @@ import {
 
 import { useState } from 'react';
 
-
-// TODO: get latest available data for the linear chart
 // TODO: possibility to change the month/day/year data being displayed
 export default function ConsumptionGraph() {
   const { loading, error, data } = useLastMeasures();
   const { barAnnualChartData } = useAccumulatedAnnual();
-
-  // TODO: maybe change this chart for one that adds more value, or maybe get the data for each day of the month
-  const { barMonthlyChartData } = useAccumulatedMonthly();
+  const { loadingMonthly, errorMonthly, barMonthlyChartData } = useAccumulatedMonthly();
   
   const [chartType, setChartType] = useState('1');
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error :(</p>;
+  if (loading || loadingMonthly) return <p>Loading...</p>;
+  if (error || errorMonthly) return <p>Error :(</p>;
 
   const renderChart = () => {
     switch (chartType) {

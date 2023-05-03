@@ -1,8 +1,10 @@
 from datetime import timedelta, datetime
 import graphene
 from dateutil.relativedelta import relativedelta
+import calendar
+from utils import get_previous_date
 
-from worker import get_electricity_data_interval, get_year_accumulated_electricity_data, get_accumulated_electricity_data
+from worker import get_electricity_data_interval, get_day_accumulated_interval, get_all_month_accumulated, get_all_year_accumulated
 
 class Measurement(graphene.ObjectType):
     date = graphene.Date()
@@ -24,7 +26,6 @@ class AccumulatedData(graphene.ObjectType):
     accumulatedValue = graphene.Float()
 
 
-# TODO: At the moment is not the difference to the same period of the previous month
 class ConsumptionDifference(graphene.ObjectType):
     accumulativeData = graphene.List(AccumulatedData)
     delta = graphene.String()
@@ -47,90 +48,87 @@ class Query(graphene.ObjectType):
     consumption_difference = graphene.Field(ConsumptionDifference, month=graphene.String())
 
     def resolve_daily_measurements(self, info, start_date=None, end_date=None):
-
-        results = get_electricity_data_interval(start_date, end_date)
-
-        daily_measurements = []
-        for result in results:
-            date = result["date"] # dd/mm/yyyy (str)
-            measurements = [{
-                    "hour": hourly_data["hourCCH"] - 1,
-                    "value": hourly_data["valueDouble"] if "valueDouble" in hourly_data else None,
-                } for hourly_data in result["data"]]
-                
-            daily_measurements.append(
-                DailyMeasurements(
-                    date=date,
-                    measurements=measurements
+        try:
+            results = get_electricity_data_interval(start_date, end_date)
+            daily_measurements = []
+            for result in results:
+                date = result["date"] # dd/mm/yyyy (str)
+                measurements = [{
+                        "hour": hourly_data["hourCCH"] - 1,
+                        "value": hourly_data["valueDouble"] if "valueDouble" in hourly_data else None,
+                    } for hourly_data in result["data"]]
+                    
+                daily_measurements.append(
+                    DailyMeasurements(
+                        date=date,
+                        measurements=measurements
+                    )
                 )
-            )
+        except:
+            daily_measurements = []
+            measurements = [{"hour": h, "value": 0} for h in range(24)]
+            daily_measurements.append(DailyMeasurements(
+                date=datetime.strptime(start_date, "%Y-%m-%d"),
+                measurements=measurements
+            ))
 
         return daily_measurements
     
     def resolve_accumulated_data(self, info, year=None):
 
-        data = get_year_accumulated_electricity_data(year)
-
         accumulated_data = []
-        for result in data:
-            accumulated_data.append(
-                AccumulatedData(
-                    date=result["date"].strftime("%Y-%m"),
+        result = get_all_year_accumulated(year)
+        for result in result:
+            accumulated_data.append(AccumulatedData(
+                    date=result["date"],
                     accumulatedValue=result["accumulatedValue"]
-                )
-            )
+                ))  
 
         return accumulated_data
     
+
     def resolve_accumulated_monthly_data(self, info, month=None):
-
-        result = get_accumulated_electricity_data(month)
-
         accumulated_monthly_data = []
-        accumulated_monthly_data.append(AccumulatedData(
-            date=result["date"].strftime("%Y-%m"),
-            accumulatedValue=result["accumulatedValue"]
-        ))
-
+        result = get_all_month_accumulated(month,datetime.today().date().strftime("%Y-%m-%d"))
+        for result in result:
+            accumulated_monthly_data.append(AccumulatedData(
+                    date=result["date"],
+                    accumulatedValue=result["accumulatedValue"]
+                ))  
         return accumulated_monthly_data
-    
+
     def resolve_consumption_difference(self, info, month=None):
- 
-        result = get_accumulated_electricity_data(month)
+        start_date = datetime.strptime(month, "%Y-%m-%d").date()
+        current_date = datetime.today().date()
+        previous_month_obj = get_previous_date(current_date)
+        end_date = current_date
+        accumulated_current_month = get_day_accumulated_interval(start_date.strftime("%Y-%m-%d"),end_date.strftime("%Y-%m-%d"))
 
         consumption_difference = []
         consumption_difference.append(AccumulatedData(
-            date=result["date"].strftime("%Y-%m"),
-            accumulatedValue=result["accumulatedValue"]
+            date=accumulated_current_month["date"],
+            accumulatedValue=accumulated_current_month["accumulatedValue"]
         ))
 
-        actual_value = result["accumulatedValue"]
+        current_value = accumulated_current_month["accumulatedValue"]
 
-        month_obj = datetime.strptime(month, "%Y-%m-%d")
-        previous_month_obj = month_obj - relativedelta(months=1)
-        previous_month_str = previous_month_obj.strftime("%Y-%m-%d")
-        
-        result = get_accumulated_electricity_data(previous_month_str)
+        previous_end_date = datetime.strptime(accumulated_current_month["date"], "%Y-%m-%d").replace(year=previous_month_obj.year, month=previous_month_obj.month)
+        accumulated_prev_month = get_day_accumulated_interval(previous_month_obj.date().strftime("%Y-%m-%d"),previous_end_date.date().strftime("%Y-%m-%d")) 
 
         consumption_difference.append(AccumulatedData(
-            date=result["date"].strftime("%Y-%m"),
-            accumulatedValue=result["accumulatedValue"]
+            date=accumulated_prev_month["date"],
+            accumulatedValue=accumulated_prev_month["accumulatedValue"]
         ))
 
-        prev_value = result["accumulatedValue"]
+        prev_value = accumulated_prev_month["accumulatedValue"]
 
-        delta = round((actual_value - prev_value) / prev_value * 100, 2)
-        delta_type = ""
-        if delta > 0:
-            delta_type = "increase"
-        else:
-            delta_type = "decrease"
+        delta = round((current_value - prev_value) / prev_value * 100, 2)
+        delta_type = "increase" if delta > 0 else "decrease"
 
         return ConsumptionDifference(
             accumulativeData=consumption_difference,
             delta=str(delta)+'%',
             deltaType=delta_type
         )
-
 
 schema = graphene.Schema(query=Query)

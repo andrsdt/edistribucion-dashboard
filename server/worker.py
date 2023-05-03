@@ -4,7 +4,7 @@ from datetime import timedelta, datetime
 import calendar
 
 from Edistribucion import Edistribucion
-from mongo import electricity_collection, accumulated_monthly
+from mongo import electricity_collection, accumulated_monthly, accumulated_daily
 from utils import (
     data_is_complete,
     month_is_complete,
@@ -19,6 +19,7 @@ from utils import (
 # create index to avoid duplicates by date
 electricity_collection.create_index("date", unique=True)
 accumulated_monthly.create_index("date", unique=True)
+accumulated_daily.create_index("date", unique=True)
 edis = Edistribucion(debug_level=logging.DEBUG)
 
 
@@ -143,14 +144,12 @@ def get_accumulated_electricity_data(date_str: str):
         electricity_data = get_electricity_data_interval(date_str, end_date_str)
     
         # With this data we calculate the accumulated value for the whole month
-        # Crea la lista de etapas de agregación
         pipeline = [
             {"$match": {"date": {"$gte": date, "$lte": date.replace(day=num_days)}}},
             {"$unwind": "$data"},
             {"$group": {"_id": None, "accumulatedValue": {"$sum": "$data.valueDouble"}}}
         ]
 
-        # Ejecuta la agregación y devuelve el resultado
         result = list(electricity_collection.aggregate(pipeline))
 
         # This is another way for getting the accumulated value
@@ -181,9 +180,9 @@ def get_accumulated_electricity_data(date_str: str):
 
 def get_year_accumulated_electricity_data(year: int):
     start_date = datetime(year, 1, 1)
-    end_date = start_date.replace(month=12,day=31)
+    end_date = datetime.today()
 
-    electricity_data = list(accumulated_monthly.find({"date": {"$gte": start_date, "$lt": end_date}}))
+    electricity_data = list(accumulated_monthly.find({"date": {"$gte": start_date, "$lte": end_date}}))
 
     # If the year asked is the current year this will always be False since the information wont't be complete
     # TODO: check if this is what we want
@@ -191,10 +190,9 @@ def get_year_accumulated_electricity_data(year: int):
         print(f"Found cached electricity data for year {year}")
     else:
         # Makes sure all the data available in the year is up in the cache
-        #TODO: At the moment this gives an error becuase of the change of contract at the beggining of the year
         year_str = str(year)
-        start_date_str = year_str + "-02-01"
-        end_date_str = year_str + "-12-31"
+        start_date_str = year_str + "-01-01"
+        end_date_str = datetime.today().date().strftime("%Y-%m-%d")
         get_electricity_data_interval(start_date_str, end_date_str)
 
 
@@ -231,11 +229,172 @@ def get_year_accumulated_electricity_data(year: int):
 
     return electricity_data
 
+
+def get_day_accumulated_electricity_data(date: datetime):
+    date_str = date.strftime("%Y-%m-%d")
+    # Check for the data in that day and if it is complete
+    accumulated_daily_data = accumulated_daily.find_one({"date": date, "complete": True})
+
+    if accumulated_daily_data:
+        print(f"Found cached accumulated daily electricity data for date {date}")
+    else:
+        print(f"Fetching day electricity data for {date}")
+        
+        try:
+            electricity_data = list(get_electricity_data_interval(date_str,date_str))
+            # With this data we calculate the accumulated value for the day
+            pipeline = [
+                {"$match": {"date": date}},
+                {"$unwind": "$data"},
+                {"$group": {"_id": None, "accumulatedValue": {"$sum": "$data.valueDouble"}}},
+                {"$project": {"_id": 0, "accumulatedValue": {"$ifNull": ["$accumulatedValue", 0]}}}
+            ]
+
+            result = list(electricity_collection.aggregate(pipeline))
+
+            accumulated_daily.update_one(
+                {"date": date},
+                {"$set": {
+                    "complete": data_is_complete(list(electricity_data)[0]["data"]),
+                    "accumulatedValue": result[0]['accumulatedValue']
+                }},
+                upsert=True
+            )
+        except:
+            accumulated_daily.update_one(
+                {"date": date},
+                {"$set": {
+                    "complete": False,
+                    "accumulatedValue": 0
+                }},
+                upsert=True
+            )
+        
+
+        print(f"Cached accumulated daily electricity data for date {date}")
+        accumulated_daily_data = accumulated_daily.find_one({"date": date})
+
+    return accumulated_daily_data
+
+
+def get_day_accumulated_interval(start_date_str, end_date_str):
+    start_date = format_date_dashes(start_date_str)
+    end_date = format_date_dashes(end_date_str)
+    iterator_date = start_date
+    while iterator_date <= end_date:
+        get_day_accumulated_electricity_data(iterator_date)
+        iterator_date = iterator_date + timedelta(days=1)
+    result = list(accumulated_daily.aggregate([
+        {
+            "$match": {
+            "date": {
+                "$gte": start_date,
+                "$lte": end_date
+            },
+            "complete": True
+            }
+        },
+        {
+            "$group": {
+            "_id": None,
+            "accumulated_data": { "$sum": "$accumulatedValue" },
+            "last_complete": { "$last": "$date" }
+            }
+        },
+        {
+            "$project": {
+            "_id": 0,
+            "date": { "$dateToString": { "format": "%Y-%m-%d", "date": "$last_complete" } },
+            "accumulatedValue": { "$round": ["$accumulated_data", 3] }
+            }
+        }
+    ]))
+    return result[0]
+
+def get_all_month_accumulated(month, current_date):
+    start_date = datetime.strptime(month, "%Y-%m-%d")
+    num_days = calendar.monthrange(start_date.year, start_date.month)[1]
+    end_date = datetime(year=start_date.year, month=start_date.month, day=num_days)
+    get_day_accumulated_interval(month,current_date)
+    pipeline = [
+    {
+        "$match": {
+            "date": {"$gte": start_date, "$lte": end_date}
+        }
+    },
+    {
+        "$group": {
+            "_id": "$date",
+            "accumulatedValue": {"$max": "$accumulatedValue"}
+        }
+    },
+    {
+        "$project": {
+            "_id": 0,
+            "date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$_id"}},
+            "accumulatedValue": {"$ifNull": ["$accumulatedValue", 0]}
+        }
+    },
+    {
+        "$sort": {"date": 1}
+    }
+]
+
+    result = list(accumulated_daily.aggregate(pipeline))
+    return result
+
+def get_all_year_accumulated(year):
+    get_year_accumulated_electricity_data(year)
+    start_date = datetime(year=year, month=1, day=1)
+    end_date = datetime(year=year, month=12, day=1)
+
+    pipeline = [
+        {
+            "$match": {
+                "date": {"$gte": start_date, "$lte": end_date}
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "year": {"$year": "$date"},
+                    "month": {"$month": "$date"}
+                },
+                "accumulatedValue": {"$max": "$accumulatedValue"}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "date": {"$dateToString": {"format": "%Y-%m", "date": {
+                    "$dateFromParts": {
+                        "year": "$_id.year",
+                        "month": "$_id.month",
+                    }
+                },}},
+                "accumulatedValue": {"$ifNull": ["$accumulatedValue", 0]}
+            }
+        },
+        {
+            "$sort": {"date": 1}
+        }
+    ]
+    result = list(accumulated_monthly.aggregate(pipeline))
+
+    for i in range(len(result), 12):
+        result.append({'date': '2023-' + str(i+1), 'accumulatedValue': 0})
+    return result
+
+
 if __name__ == "__main__":
     # These functions will try to fetch data from MongoDB.
     # If not present, it will fetch from the external API and update the MongoDB cache
     # get_electricity_data("22/02/2023")
     # get_electricity_data_interval("03/02/2023", "06/02/2023")
-    # get_accumulated_electricity_data("2023-04-01")
+    # get_accumulated_electricity_data("2023-03-01")
     # get_year_accumulated_electricity_data(2023)
+    # get_day_accumulated_electricity_data("2023-04-25")
+    # get_day_accumulated_interval("2023-05-01", "2023-05-03")
+    # get_all_year_accumulated(2023)
+    # get_all_month_accumulated('2023-05-01')
     pass
