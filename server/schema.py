@@ -89,7 +89,7 @@ class Query(graphene.ObjectType):
 
     def resolve_accumulated_monthly_data(self, info, month=None):
         accumulated_monthly_data = []
-        result = get_all_month_accumulated(month)
+        result = get_all_month_accumulated(month,datetime.today().date().strftime("%Y-%m-%d"))
         for result in result:
             accumulated_monthly_data.append(AccumulatedData(
                     date=result["date"],

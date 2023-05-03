@@ -180,9 +180,9 @@ def get_accumulated_electricity_data(date_str: str):
 
 def get_year_accumulated_electricity_data(year: int):
     start_date = datetime(year, 1, 1)
-    end_date = start_date.replace(month=12,day=31)
+    end_date = datetime.today()
 
-    electricity_data = list(accumulated_monthly.find({"date": {"$gte": start_date, "$lt": end_date}}))
+    electricity_data = list(accumulated_monthly.find({"date": {"$gte": start_date, "$lte": end_date}}))
 
     # If the year asked is the current year this will always be False since the information wont't be complete
     # TODO: check if this is what we want
@@ -192,7 +192,7 @@ def get_year_accumulated_electricity_data(year: int):
         # Makes sure all the data available in the year is up in the cache
         year_str = str(year)
         start_date_str = year_str + "-01-01"
-        end_date_str = year_str + "-12-31"
+        end_date_str = datetime.today().date().strftime("%Y-%m-%d")
         get_electricity_data_interval(start_date_str, end_date_str)
 
 
@@ -311,14 +311,11 @@ def get_day_accumulated_interval(start_date_str, end_date_str):
     ]))
     return result[0]
 
-def get_all_month_accumulated(month):
+def get_all_month_accumulated(month, current_date):
     start_date = datetime.strptime(month, "%Y-%m-%d")
     num_days = calendar.monthrange(start_date.year, start_date.month)[1]
     end_date = datetime(year=start_date.year, month=start_date.month, day=num_days)
-    iterator_date = start_date
-    while iterator_date <= end_date:
-        get_day_accumulated_electricity_data(iterator_date)
-        iterator_date = iterator_date + timedelta(days=1)
+    get_day_accumulated_interval(month,current_date)
     pipeline = [
     {
         "$match": {
@@ -396,6 +393,8 @@ if __name__ == "__main__":
     # get_electricity_data_interval("03/02/2023", "06/02/2023")
     # get_accumulated_electricity_data("2023-03-01")
     # get_year_accumulated_electricity_data(2023)
-    # get_day_accumulated_electricity_data("2023-04-21")
-    get_all_year_accumulated(2023)
+    # get_day_accumulated_electricity_data("2023-04-25")
+    # get_day_accumulated_interval("2023-05-01", "2023-05-03")
+    # get_all_year_accumulated(2023)
+    # get_all_month_accumulated('2023-05-01')
     pass
