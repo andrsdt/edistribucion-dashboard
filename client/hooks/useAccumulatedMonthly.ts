@@ -1,30 +1,36 @@
-import { gql, useQuery } from '@apollo/client';
-import { client } from '../lib/apolloClient';
+import { gql, useQuery } from "@apollo/client";
+import { client } from "../lib/apolloClient";
+import dayjs from "dayjs";
 
 const QUERY = gql`
-  query GetMonthlyAccumulatedElectricityData($month: String!) {
-    accumulatedMonthlyData(month: $month) {
-      date
-      accumulatedValue
-    }
-  }
+	query GetMonthlyAccumulatedElectricityData($month: String!) {
+		accumulatedMonthlyData(month: $month) {
+			date
+			accumulatedValue
+		}
+	}
 `;
 
-const currentDate = new Date();
-currentDate.setDate(1);
-const month = currentDate.toISOString().slice(0, 10);
+export default function useAccumulatedMonthly(date: Date) {
+	const firstDayOfMonth = dayjs(date).startOf("month").format("YYYY-MM-DD");
+	const { loading, error, data } = useQuery(QUERY, {
+		variables: {
+			month: firstDayOfMonth,
+		},
+		client: client,
+	});
 
-export default function useAccumulatedMonthly() {
-  const { loading, error, data } = useQuery(QUERY, {
-    variables: {
-      month: month,
-    },
-    client: client,
-  });
+	// Format X axis as single days (1, 2, 3, ..., 31)
+	const formattedData = data?.accumulatedMonthlyData.map((item: any) => {
+		return {
+			...item,
+			date: dayjs(item.date).format("D"),
+		};
+	});
 
-  return {
-    loadingMonthly: loading,
-    errorMonthly: error,
-    barMonthlyChartData: data?.accumulatedMonthlyData,
-  };
+	return {
+		loadingMonthly: loading,
+		errorMonthly: error,
+		dataMonthly: formattedData,
+	};
 }

@@ -1,79 +1,139 @@
-import useLastMeasures from "@/hooks/useLastMeasures";
-import useAccumulatedAnnual from '@/hooks/useAccumulatedAnnual';
-import useAccumulatedMonthly from '@/hooks/useAccumulatedMonthly';
-import {
-  Card,
-  Flex,
-  LineChart,
-  BarChart,
-  Title,
-  Toggle,
-  ToggleItem,
-} from "@tremor/react";
+import useAccumulatedAnnual from "@/hooks/useAccumulatedAnnual";
+import useAccumulatedMonthly from "@/hooks/useAccumulatedMonthly";
+import useDailyMeasures from "@/hooks/useDailyMeasures";
+import { Card, Flex, Title, Toggle, ToggleItem } from "@tremor/react";
 
-import { useState } from 'react';
+import { useState } from "react";
+import BarConsumptionChart from "./barConsumptionChart";
+import LineConsumptionChart from "./lineConsumptionChart";
+import dayjs from "dayjs";
 
-// TODO: possibility to change the month/day/year data being displayed
+const today = new Date();
+
+const CHART_TYPES = {
+	DAILY: "daily",
+	MONTHLY: "monthly",
+	YEARLY: "yearly",
+};
+const defaultChart = CHART_TYPES.DAILY;
+
 export default function ConsumptionGraph() {
-  const { loading, error, data } = useLastMeasures();
-  const { barAnnualChartData } = useAccumulatedAnnual();
-  const { loadingMonthly, errorMonthly, barMonthlyChartData } = useAccumulatedMonthly();
-  
-  const [chartType, setChartType] = useState('1');
+	const [dailyChartDay, setDailyChartDay] = useState(today);
+	const [monthlyChartMonth, setMonthlyChartMonth] = useState(today);
+	const [annualChartYear, setAnnualChartYear] = useState(today);
 
-  if (loading || loadingMonthly) return <p>Loading...</p>;
-  if (error || errorMonthly) return <p>Error :(</p>;
+	const { loadingDaily, errorDaily, dataDaily } =
+		useDailyMeasures(dailyChartDay);
+	const { loadingYearly, errorYearly, dataYearly } =
+		useAccumulatedAnnual(annualChartYear);
+	const { loadingMonthly, errorMonthly, dataMonthly } =
+		useAccumulatedMonthly(monthlyChartMonth);
 
-  const renderChart = () => {
-    switch (chartType) {
-      case '1':
-        return (
-          <LineChart
-            className="mt-3"
-            data={data}
-            index="hour"
-            categories={['value']}
-            colors={['blue']}
-            yAxisWidth={30}
-          />
-        );
-      case '2':
-        return (
-          <BarChart
-            className="mt-3"
-            data={barMonthlyChartData}
-            index="date"
-            colors={['blue']}
-            yAxisWidth={30}
-            categories={['accumulatedValue']}
-          />
-        );  
-      case '3':
-        return (
-          <BarChart
-            className="mt-3"
-            data={barAnnualChartData}
-            index="date"
-            colors={['blue']}
-            yAxisWidth={30}
-            categories={['accumulatedValue']}
-          />
-        );
-    }
-  };
+	const [chartType, setChartType] = useState(defaultChart);
 
-  return (
-    <Card>
-      <Flex>
-        <Title>Tu consumo</Title>
-        <Toggle defaultValue="1" onValueChange={(value) => setChartType(value)}>
-          <ToggleItem value="1" text="Diario" />
-          <ToggleItem value="2" text="Mensual" />
-          <ToggleItem value="3" text="Anual" />
-        </Toggle>
-      </Flex>
-      {renderChart()}
-    </Card>
-  );
+	const navigators = {
+		// step: 1 day (datetime object)
+		[CHART_TYPES.DAILY]: (
+			<DailyNextPreviousButtons day={dailyChartDay} setDay={setDailyChartDay} />
+		),
+		[CHART_TYPES.MONTHLY]: (
+			<MonthlyPreviousButtons
+				month={monthlyChartMonth}
+				setMonth={setMonthlyChartMonth}
+			/>
+		),
+		[CHART_TYPES.YEARLY]: (
+			<YearlyPreviousButtons
+				year={annualChartYear}
+				setYear={setAnnualChartYear}
+			/>
+		),
+	};
+	const charts = {
+		[CHART_TYPES.DAILY]: <LineConsumptionChart data={dataDaily} />,
+		[CHART_TYPES.MONTHLY]: <BarConsumptionChart data={dataMonthly} />,
+		[CHART_TYPES.YEARLY]: <BarConsumptionChart data={dataYearly} />,
+	};
+
+	return (
+		<Card>
+			<Flex className="flex-col-reverse justify-center space-y-4 space-y-reverse md:space-y-0 md:flex-row md:justify-between">
+				{navigators[chartType]}
+				<Toggle
+					defaultValue={defaultChart}
+					onValueChange={(value) => setChartType(value)}
+				>
+					<ToggleItem value={CHART_TYPES.DAILY} text="Diario" />
+					<ToggleItem value={CHART_TYPES.MONTHLY} text="Mensual" />
+					<ToggleItem value={CHART_TYPES.YEARLY} text="Anual" />
+				</Toggle>
+			</Flex>
+			{charts[chartType]}
+		</Card>
+	);
 }
 
+const GenericNextPreviousButtons = ({
+	date,
+	setDate,
+	onPrevious,
+	onNext,
+	text,
+}: any) => {
+	const hasNext = onNext(date.getTime()) <= today.getTime();
+	return (
+		<Flex className="w-min whitespace-nowrap justify-start space-x-2">
+			<button id="chevron-arrow-left" onClick={() => setDate(onPrevious)} />
+			<Title>{text}</Title>
+			{hasNext && (
+				<button id="chevron-arrow-right" onClick={() => setDate(onNext)} />
+			)}
+		</Flex>
+	);
+};
+
+const DailyNextPreviousButtons = ({ day, setDay }: any) => {
+	const text = day.toLocaleDateString("es-ES", {
+		weekday: "long",
+		day: "numeric",
+		month: "long",
+	});
+	return (
+		<GenericNextPreviousButtons
+			date={day}
+			setDate={setDay}
+			onPrevious={() => dayjs(day).subtract(1, "day").toDate()}
+			onNext={() => dayjs(day).add(1, "day").toDate()}
+			text={text}
+		/>
+	);
+};
+
+const MonthlyPreviousButtons = ({ month, setMonth }: any) => {
+	const text = month.toLocaleDateString("es-ES", {
+		month: "long",
+		year: "numeric",
+	});
+	return (
+		<GenericNextPreviousButtons
+			date={month}
+			setDate={setMonth}
+			onPrevious={() => dayjs(month).subtract(1, "month").toDate()}
+			onNext={() => dayjs(month).add(1, "month").toDate()}
+			text={text}
+		/>
+	);
+};
+
+const YearlyPreviousButtons = ({ year, setYear }: any) => {
+	const text = year.toLocaleDateString("es-ES", { year: "numeric" });
+	return (
+		<GenericNextPreviousButtons
+			date={year}
+			setDate={setYear}
+			onPrevious={() => dayjs(year).subtract(1, "year").toDate()}
+			onNext={() => dayjs(year).add(1, "year").toDate()}
+			text={text}
+		/>
+	);
+};

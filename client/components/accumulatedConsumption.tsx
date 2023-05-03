@@ -2,27 +2,33 @@ import useMonthMeasures from "@/hooks/useMonthMeasures";
 import { getCumulativeData } from "@/utils/getCumulativeData";
 import { AreaChart, Card, Title } from "@tremor/react";
 
+const today = new Date();
+
 export default function AccumulatedConsumption() {
-  const { loading, error, data } = useMonthMeasures();
-  const accumulatedMeasures = getCumulativeData(data);
-  const currentDate = new Date();
-  const month = currentDate.toLocaleDateString('es-ES', { month: 'long' });
-  const formattedMonth = month.charAt(0).toUpperCase() + month.slice(1);
+	const { data } = useMonthMeasures(today);
+	const accumulatedMeasures = getCumulativeData(data);
+	const thisMonth = new Date()
+		.toLocaleDateString("es-ES", {
+			month: "long",
+			year: "numeric",
+		})
+		.replace(" de ", " ");
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error :(</p>;
-
-  return (
-    <Card>
-      <Title>Tu consumo ({formattedMonth} 2023)</Title>
-      <AreaChart
-        data={accumulatedMeasures}
-        index="date"
-        categories={["value"]}
-        colors={["blue"]}
-        yAxisWidth={20}
-        showLegend={false}
-      />
-    </Card>
-  );
+	return (
+		<Card>
+			<Title>Tu consumo acumulado ({thisMonth})</Title>
+			<AreaChart
+				className="pt-4"
+				data={accumulatedMeasures}
+				index="date"
+				categories={["value"]}
+				valueFormatter={(value) => `${value.toFixed()} kWh`}
+				colors={["blue"]}
+				autoMinValue={true}
+				showXAxis={false}
+				showLegend={false}
+				yAxisWidth={60}
+			/>
+		</Card>
+	);
 }

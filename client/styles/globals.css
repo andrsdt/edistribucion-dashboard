@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+a {
+	@apply underline text-blue-600 hover:text-blue-800 visited:text-purple-600;
+}
+
+#chevron-arrow-left {
+	display: inline-block;
+	border-right: 2px solid black;
+	border-bottom: 2px solid black;
+	width: 10px;
+	height: 10px;
+	transform: rotate(135deg);
+}
+
+#chevron-arrow-right {
+	display: inline-block;
+	border-right: 2px solid black;
+	border-bottom: 2px solid black;
+	width: 10px;
+	height: 10px;
+	transform: rotate(-45deg);
+}
