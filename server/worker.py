@@ -1,4 +1,3 @@
-import itertools
 import logging
 from datetime import timedelta, datetime
 import calendar
@@ -90,36 +89,46 @@ def get_electricity_data_interval(start_date_str: str, end_date_str: str):
         for date_range in date_ranges_to_fetch:
             first_date_str = date_range[0].strftime("%Y-%m-%d")
             end_date_str = date_range[1].strftime("%Y-%m-%d")
-            # Fetch data for the range
+            
+            # If it's trying to fetch data for today, don't fetch it because it's not gonna exist in the remote API
+            if end_date_str == datetime.today().strftime("%Y-%m-%d"):
+                break
+
             print(f"Fetching electricity data for date {start_date_str} - {end_date_str} from remote API")
-            electricity_data = edis.get_meas_interval(
-                cups["Id"], first_date_str, end_date_str
-            )
-
-            # Group objects by day
-            for day_data in electricity_data:
-                day_dict = {}
-                for obj in day_data:
-                    date = format_date_slashes(obj["date"])
-                    if date not in day_dict:
-                        day_dict[date] = []
-                    day_dict[date].append(obj)
-
-                # Insert grouped data in MongoDB
-                # Add date to database if not present, otherwise update
-                data = day_dict[date]  # Data for the day
-                electricity_collection.update_many(
-                    update={
-                        "$set": {
-                            "date": date,
-                            "complete": data_is_complete(data),
-                            "data": data,
-                        }
-                    },
-                    filter={"date": date},
-                    upsert=True,
+            try:
+                electricity_data = edis.get_meas_interval(
+                    cups["Id"], first_date_str, end_date_str
                 )
 
+                # Group objects by day
+                for day_data in electricity_data:
+                    day_dict = {}
+                    for obj in day_data:
+                        date = format_date_slashes(obj["date"])
+                        if date not in day_dict:
+                            day_dict[date] = []
+                        day_dict[date].append(obj)
+
+                    # Insert grouped data in MongoDB
+                    # Add date to database if not present, otherwise update
+                    data = day_dict[date]  # Data for the day
+                    electricity_collection.update_many(
+                        update={
+                            "$set": {
+                                "date": date,
+                                "complete": data_is_complete(data),
+                                "data": data,
+                            }
+                        },
+                        filter={"date": date},
+                        upsert=True,
+                    )
+            except Exception:
+                print(f"ERROR FETCHING ELECTRICITY DATA for date {start_date_str} - {end_date_str} from remote API")
+
+                # Return the data we have so far, better than nothing
+                return electricity_collection.find({"date": {"$gte": start_date, "$lte": end_date}})
+            
             print(f"Cached electricity data for date {start_date_str} - {end_date_str}")
 
     return electricity_collection.find({"date": {"$gte": start_date, "$lte": end_date}})
@@ -180,7 +189,7 @@ def get_accumulated_electricity_data(date_str: str):
 
 def get_year_accumulated_electricity_data(year: int):
     start_date = datetime(year, 1, 1)
-    end_date = datetime.today()
+    end_date = datetime(year, 12, 31)
 
     electricity_data = list(accumulated_monthly.find({"date": {"$gte": start_date, "$lte": end_date}}))
 
@@ -190,11 +199,9 @@ def get_year_accumulated_electricity_data(year: int):
         print(f"Found cached electricity data for year {year}")
     else:
         # Makes sure all the data available in the year is up in the cache
-        year_str = str(year)
-        start_date_str = year_str + "-01-01"
-        end_date_str = datetime.today().date().strftime("%Y-%m-%d")
+        start_date_str = start_date.strftime("%Y-%m-%d")
+        end_date_str = end_date.strftime("%Y-%m-%d")
         get_electricity_data_interval(start_date_str, end_date_str)
-
 
         # Gets the accumulated value of all the months available in the year
         # Also get if the month is complete or not
@@ -280,8 +287,12 @@ def get_day_accumulated_electricity_data(date: datetime):
 def get_day_accumulated_interval(start_date_str, end_date_str):
     start_date = format_date_dashes(start_date_str)
     end_date = format_date_dashes(end_date_str)
+    
+    # First of all, try to get all the data in a single request just to cache it to our mongo
+    get_electricity_data_interval(start_date_str,end_date_str)
+
     iterator_date = start_date
-    while iterator_date <= end_date:
+    while iterator_date <= min(end_date, datetime.now()):
         get_day_accumulated_electricity_data(iterator_date)
         iterator_date = iterator_date + timedelta(days=1)
     result = list(accumulated_daily.aggregate([
@@ -311,11 +322,12 @@ def get_day_accumulated_interval(start_date_str, end_date_str):
     ]))
     return result[0]
 
-def get_all_month_accumulated(month, current_date):
+def get_all_month_accumulated(month):
+
     start_date = datetime.strptime(month, "%Y-%m-%d")
     num_days = calendar.monthrange(start_date.year, start_date.month)[1]
     end_date = datetime(year=start_date.year, month=start_date.month, day=num_days)
-    get_day_accumulated_interval(month,current_date)
+    get_day_accumulated_interval(month, end_date.strftime("%Y-%m-%d"))
     pipeline = [
     {
         "$match": {
@@ -382,7 +394,7 @@ def get_all_year_accumulated(year):
     result = list(accumulated_monthly.aggregate(pipeline))
 
     for i in range(len(result), 12):
-        result.append({'date': '2023-' + str(i+1), 'accumulatedValue': 0})
+        result.append({'date': str(year) + '-' + str(i+1), 'accumulatedValue': 0})
     return result
 
 

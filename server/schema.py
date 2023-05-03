@@ -1,7 +1,5 @@
-from datetime import timedelta, datetime
+from datetime import datetime
 import graphene
-from dateutil.relativedelta import relativedelta
-import calendar
 from utils import get_previous_date
 
 from worker import get_electricity_data_interval, get_day_accumulated_interval, get_all_month_accumulated, get_all_year_accumulated
@@ -47,7 +45,7 @@ class Query(graphene.ObjectType):
 
     consumption_difference = graphene.Field(ConsumptionDifference, month=graphene.String())
 
-    def resolve_daily_measurements(self, info, start_date=None, end_date=None):
+    def resolve_daily_measurements(self, _, start_date=None, end_date=None):
         try:
             results = get_electricity_data_interval(start_date, end_date)
             daily_measurements = []
@@ -64,7 +62,7 @@ class Query(graphene.ObjectType):
                         measurements=measurements
                     )
                 )
-        except:
+        except Exception:
             daily_measurements = []
             measurements = [{"hour": h, "value": 0} for h in range(24)]
             daily_measurements.append(DailyMeasurements(
@@ -74,23 +72,24 @@ class Query(graphene.ObjectType):
 
         return daily_measurements
     
-    def resolve_accumulated_data(self, info, year=None):
-
+    def resolve_accumulated_data(self, _, year=None):
         accumulated_data = []
-        result = get_all_year_accumulated(year)
-        for result in result:
-            accumulated_data.append(AccumulatedData(
-                    date=result["date"],
-                    accumulatedValue=result["accumulatedValue"]
-                ))  
+        try:
+            result = get_all_year_accumulated(year)
+            for result in result:
+                accumulated_data.append(AccumulatedData(
+                        date=result["date"],
+                        accumulatedValue=result["accumulatedValue"]
+                    ))  
+        except Exception:
+            pass
 
         return accumulated_data
     
-
-    def resolve_accumulated_monthly_data(self, info, month=None):
+    def resolve_accumulated_monthly_data(self, _, month=None):
         accumulated_monthly_data = []
-        result = get_all_month_accumulated(month,datetime.today().date().strftime("%Y-%m-%d"))
-        for result in result:
+        results = get_all_month_accumulated(month)
+        for result in results:
             accumulated_monthly_data.append(AccumulatedData(
                     date=result["date"],
                     accumulatedValue=result["accumulatedValue"]
