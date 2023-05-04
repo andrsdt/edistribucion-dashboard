@@ -136,7 +136,7 @@ const YearlyPreviousButtons = ({ year, setYear }: any) => {
 			date={year}
 			setDate={setYear}
 			onPrevious={() => dayjs(year).subtract(1, "year").endOf("year").toDate()}
-			onNext={() => dayjs(year).add(1, "year").endOf("year").toDate()}
+			onNext={() => dayjs(year).add(1, "year").startOf("year").toDate()}
 			text={text}
 		/>
 	);
