@@ -7,6 +7,7 @@ import { useState } from "react";
 import BarConsumptionChart from "./barConsumptionChart";
 import LineConsumptionChart from "./lineConsumptionChart";
 import dayjs from "dayjs";
+import InformationModal from "./informationModal";
 
 const today = new Date();
 
@@ -82,11 +83,16 @@ const GenericNextPreviousButtons = ({
 		onPrevious(date.getTime()) >= new Date(2022, 0, 31).getTime();
 	const hasNext = onNext(date.getTime()) <= today.getTime();
 	return (
-		<Flex className="w-min whitespace-nowrap justify-start space-x-2">
-			{hasPrevious && (
+		<Flex className="w-min justify-start items-center space-x-2">
+			{hasPrevious ? (
 				<button id="chevron-arrow-left" onClick={() => setDate(onPrevious)} />
+			) : (
+				<InformationModal
+					origin="top-left"
+					text="No hay datos disponibles anteriores a febrero de 2022"
+				/>
 			)}
-			<Title>{text}</Title>
+			<Title className="whitespace-nowrap">{text}</Title>
 			{hasNext && (
 				<button id="chevron-arrow-right" onClick={() => setDate(onNext)} />
 			)}

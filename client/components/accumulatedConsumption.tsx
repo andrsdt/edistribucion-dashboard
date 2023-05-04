@@ -7,16 +7,10 @@ const today = new Date();
 export default function AccumulatedConsumption() {
 	const { data } = useMonthMeasures(today);
 	const accumulatedMeasures = getCumulativeData(data);
-	const thisMonth = new Date()
-		.toLocaleDateString("es-ES", {
-			month: "long",
-			year: "numeric",
-		})
-		.replace(" de ", " ");
 
 	return (
 		<Card>
-			<Title>Tu consumo acumulado ({thisMonth})</Title>
+			<Title>Tu consumo acumulado (este mes)</Title>
 			<AreaChart
 				className="pt-4"
 				data={accumulatedMeasures}
