@@ -14,9 +14,9 @@ const QUERY = gql`
 	}
 `;
 
-const defaultData = Array.from({ length: 24 }, (_, i) => ({
+export const defaultData = Array.from({ length: 24 }, (_, i) => ({
 	hour: i,
-	value: -1, // -1 so that the graph is flat and centered
+	value: undefined,
 }));
 
 export default function useDailyMeasures(date: Date) {
@@ -30,10 +30,11 @@ export default function useDailyMeasures(date: Date) {
 	});
 
 	const hasData = data?.dailyMeasurements.length > 0;
+	const dataDaily = hasData ? data.dailyMeasurements[0].measurements : [];
 
 	return {
 		loadingDaily: loading,
 		errorDaily: error,
-		dataDaily: hasData ? data.dailyMeasurements[0].measurements : defaultData,
+		dataDaily: loading ? defaultData : dataDaily,
 	};
 }

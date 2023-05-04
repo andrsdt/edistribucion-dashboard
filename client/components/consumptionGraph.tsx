@@ -117,7 +117,8 @@ const DailyNextPreviousButtons = ({ day, setDay }: any) => {
 	);
 };
 
-const MonthlyPreviousButtons = ({ month, setMonth }: any) => {
+// Also used in cumulative monthly data chart
+export const MonthlyPreviousButtons = ({ month, setMonth }: any) => {
 	const text = month.toLocaleDateString("es-ES", {
 		month: "long",
 		year: "numeric",

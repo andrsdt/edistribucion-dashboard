@@ -10,6 +10,8 @@ import {
 	Text,
 } from "@tremor/react";
 import InformationModal from "./informationModal";
+import { useState } from "react";
+import { MonthlyPreviousButtons } from "./consumptionGraph";
 
 const colors: { [key: string]: Color } = {
 	increase: "rose",
@@ -19,13 +21,22 @@ const colors: { [key: string]: Color } = {
 	decrease: "emerald",
 };
 
+const today = new Date();
 export default function ConsumptionDifference() {
-	const { data } = useConsumptionDifference();
+	const [month, setMonth] = useState(today);
+	const { data } = useConsumptionDifference(month);
+
 	return (
 		<Card className="h-full">
 			<Flex className="mb-2">
-				<Text>Tu Consumo (este mes)</Text>
-				<InformationModal text="Los datos pueden no corresponderse con la realidad, ya que la comparación se hace para el último día del que haya datos disponibles al completo (24-48 horas en el pasado)" />
+				<Text className="whitespace-nowrap">Tu Consumo</Text>
+				<Flex className="justify-end space-x-2">
+					<MonthlyPreviousButtons month={month} setMonth={setMonth} />
+					<InformationModal
+						origin="top-right"
+						text="Los datos pueden no corresponderse con la realidad ya que, para que la comparación sea justa, se hace con el último día del que haya datos disponibles al completo (24-48 horas en el pasado)"
+					/>
+				</Flex>
 			</Flex>
 			<Flex className="justify-start items-baseline truncate space-x-3">
 				<Metric className="mb-2.5">
@@ -41,7 +52,7 @@ export default function ConsumptionDifference() {
 					isIncreasePositive={false}
 				/>
 				<Text color={colors[data.deltaType]}>{data.delta}</Text>
-				<Text className="truncate"> al mismo periodo del último mes </Text>
+				<Text className="truncate"> al mismo periodo del mes anterior </Text>
 			</Flex>
 		</Card>
 	);

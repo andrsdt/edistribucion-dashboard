@@ -204,7 +204,6 @@ def get_year_accumulated_electricity_data(year: int):
         {"date": {"$gte": start_date, "$lte": end_date}}))
 
     # If the year asked is the current year this will always be False since the information wont't be complete
-    # TODO: check if this is what we want
     if len(electricity_data) == 12:
         print(f"Found cached electricity data for year {year}")
     else:
@@ -215,8 +214,6 @@ def get_year_accumulated_electricity_data(year: int):
 
         # Gets the accumulated value of all the months available in the year
         # Also get if the month is complete or not
-        # start_date = datetime(year, 1, 1)
-        # end_date = start_date.replace(month=12,day=31)
         pipeline = [
             {"$match": {"date": {"$gte": start_date, "$lt": end_date}}},
             {"$project": {"year_month": {"$dateToString": {"format": "%Y-%m",
@@ -306,7 +303,7 @@ def get_day_accumulated_electricity_data(date: datetime):
 def get_day_accumulated_interval(start_date_str, end_date_str):
     start_date = format_date_dashes(start_date_str)
     end_date = format_date_dashes(end_date_str)
-
+    
     # First of all, try to get all the data in a single request just to cache it to our mongo
     try:
         get_electricity_data_interval(start_date_str, end_date_str)

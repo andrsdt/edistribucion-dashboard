@@ -31,8 +31,8 @@ const defaultData = {
 	deltaType: "unchanged",
 };
 
-export default function useConsumptionDifference() {
-	const firstDayOfMonth = dayjs().startOf("month").format("YYYY-MM-DD");
+export default function useConsumptionDifference(date: Date) {
+	const firstDayOfMonth = dayjs(date).startOf("month").format("YYYY-MM-DD");
 	const { loading, error, data } = useQuery(QUERY, {
 		variables: {
 			month: firstDayOfMonth,

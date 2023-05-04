@@ -20,7 +20,7 @@ export default function InformationModal({
 	origin = "top-right",
 }: {
 	text: string;
-	origin: keyof typeof ORIGINS;
+	origin?: keyof typeof ORIGINS;
 }) {
 	const { ref, isComponentVisible, setIsComponentVisible } =
 		useComponentVisible(false); // Handle closing when clicking outside
