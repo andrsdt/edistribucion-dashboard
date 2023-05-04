@@ -9,6 +9,7 @@ import {
 	Metric,
 	Text,
 } from "@tremor/react";
+import InformationModal from "./informationModal";
 
 const colors: { [key: string]: Color } = {
 	increase: "rose",
@@ -18,14 +19,13 @@ const colors: { [key: string]: Color } = {
 	decrease: "emerald",
 };
 
-const now = new Date();
-
 export default function ConsumptionDifference() {
 	const { data } = useConsumptionDifference();
 	return (
 		<Card className="h-full">
 			<Flex className="mb-2">
-				<Text>Consumo (este mes)</Text>
+				<Text>Tu Consumo (este mes)</Text>
+				<InformationModal text="Los datos pueden no corresponderse con la realidad, ya que la comparación se hace para el último día del que haya datos disponibles al completo (24-48 horas en el pasado)" />
 			</Flex>
 			<Flex className="justify-start items-baseline truncate space-x-3">
 				<Metric className="mb-2.5">
