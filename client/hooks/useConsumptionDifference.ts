@@ -1,5 +1,6 @@
 import { gql, useQuery } from "@apollo/client";
 import { client } from "../lib/apolloClient";
+import dayjs from "dayjs";
 
 const QUERY = gql`
 	query GetConsumptionDifference($month: String!) {
@@ -30,14 +31,11 @@ const defaultData = {
 	deltaType: "unchanged",
 };
 
-const currentDate = new Date();
-currentDate.setDate(1);
-const month = currentDate.toISOString().slice(0, 10);
-
 export default function useConsumptionDifference() {
+	const firstDayOfMonth = dayjs().startOf("month").format("YYYY-MM-DD");
 	const { loading, error, data } = useQuery(QUERY, {
 		variables: {
-			month: month,
+			month: firstDayOfMonth,
 		},
 		client: client,
 	});

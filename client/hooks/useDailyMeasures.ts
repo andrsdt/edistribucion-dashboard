@@ -14,6 +14,11 @@ const QUERY = gql`
 	}
 `;
 
+const defaultData = Array.from({ length: 24 }, (_, i) => ({
+	hour: i,
+	value: -1, // -1 so that the graph is flat and centered
+}));
+
 export default function useDailyMeasures(date: Date) {
 	const dateStr = dayjs(date).format("YYYY-MM-DD");
 	const { loading, error, data } = useQuery(QUERY, {
@@ -29,6 +34,6 @@ export default function useDailyMeasures(date: Date) {
 	return {
 		loadingDaily: loading,
 		errorDaily: error,
-		dataDaily: hasData ? data.dailyMeasurements[0].measurements : {},
+		dataDaily: hasData ? data.dailyMeasurements[0].measurements : defaultData,
 	};
 }
