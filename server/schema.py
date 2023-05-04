@@ -98,9 +98,8 @@ class Query(graphene.ObjectType):
 
     def resolve_consumption_difference(self, info, month=None):
         start_date = datetime.strptime(month, "%Y-%m-%d").date()
-        current_date = datetime.today().date()
-        previous_month_obj = get_previous_date(current_date)
-        end_date = current_date
+        end_date = datetime.today().date()
+        previous_month_obj = get_previous_date(end_date)
         accumulated_current_month = get_day_accumulated_interval(start_date.strftime("%Y-%m-%d"),end_date.strftime("%Y-%m-%d"))
 
         consumption_difference = []
