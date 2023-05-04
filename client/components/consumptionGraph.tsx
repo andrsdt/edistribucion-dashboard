@@ -22,17 +22,13 @@ export default function ConsumptionGraph() {
 	const [monthlyChartMonth, setMonthlyChartMonth] = useState(today);
 	const [annualChartYear, setAnnualChartYear] = useState(today);
 
-	const { loadingDaily, errorDaily, dataDaily } =
-		useDailyMeasures(dailyChartDay);
-	const { loadingYearly, errorYearly, dataYearly } =
-		useAccumulatedAnnual(annualChartYear);
-	const { loadingMonthly, errorMonthly, dataMonthly } =
-		useAccumulatedMonthly(monthlyChartMonth);
+	const { dataDaily } = useDailyMeasures(dailyChartDay);
+	const { dataYearly } = useAccumulatedAnnual(annualChartYear);
+	const { dataMonthly } = useAccumulatedMonthly(monthlyChartMonth);
 
 	const [chartType, setChartType] = useState(defaultChart);
 
 	const navigators = {
-		// step: 1 day (datetime object)
 		[CHART_TYPES.DAILY]: (
 			<DailyNextPreviousButtons day={dailyChartDay} setDay={setDailyChartDay} />
 		),
@@ -80,10 +76,16 @@ const GenericNextPreviousButtons = ({
 	onNext,
 	text,
 }: any) => {
+	// Earliest available date is 2022-01-31.
+	// There is no date before because I switched electricity companies
+	const hasPrevious =
+		onPrevious(date.getTime()) >= new Date(2022, 0, 31).getTime();
 	const hasNext = onNext(date.getTime()) <= today.getTime();
 	return (
 		<Flex className="w-min whitespace-nowrap justify-start space-x-2">
-			<button id="chevron-arrow-left" onClick={() => setDate(onPrevious)} />
+			{hasPrevious && (
+				<button id="chevron-arrow-left" onClick={() => setDate(onPrevious)} />
+			)}
 			<Title>{text}</Title>
 			{hasNext && (
 				<button id="chevron-arrow-right" onClick={() => setDate(onNext)} />
@@ -102,8 +104,8 @@ const DailyNextPreviousButtons = ({ day, setDay }: any) => {
 		<GenericNextPreviousButtons
 			date={day}
 			setDate={setDay}
-			onPrevious={() => dayjs(day).subtract(1, "day").toDate()}
-			onNext={() => dayjs(day).add(1, "day").toDate()}
+			onPrevious={() => dayjs(day).subtract(1, "day").startOf("day").toDate()}
+			onNext={() => dayjs(day).add(1, "day").startOf("day").toDate()}
 			text={text}
 		/>
 	);
@@ -118,8 +120,10 @@ const MonthlyPreviousButtons = ({ month, setMonth }: any) => {
 		<GenericNextPreviousButtons
 			date={month}
 			setDate={setMonth}
-			onPrevious={() => dayjs(month).subtract(1, "month").toDate()}
-			onNext={() => dayjs(month).add(1, "month").toDate()}
+			onPrevious={() =>
+				dayjs(month).subtract(1, "month").startOf("month").toDate()
+			}
+			onNext={() => dayjs(month).add(1, "month").startOf("month").toDate()}
 			text={text}
 		/>
 	);
@@ -131,8 +135,8 @@ const YearlyPreviousButtons = ({ year, setYear }: any) => {
 		<GenericNextPreviousButtons
 			date={year}
 			setDate={setYear}
-			onPrevious={() => dayjs(year).subtract(1, "year").toDate()}
-			onNext={() => dayjs(year).add(1, "year").toDate()}
+			onPrevious={() => dayjs(year).subtract(1, "year").endOf("year").toDate()}
+			onNext={() => dayjs(year).add(1, "year").endOf("year").toDate()}
 			text={text}
 		/>
 	);
