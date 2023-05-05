@@ -3,6 +3,7 @@ import { getCumulativeData } from "@/utils/getCumulativeData";
 import { AreaChart, Card, Flex, Title } from "@tremor/react";
 import { useState } from "react";
 import { MonthlyPreviousButtons } from "./consumptionGraph";
+import { MONTHLY_CONSUMPTION_LIMIT_IN_KWH } from "@/constants";
 
 const today = new Date();
 
@@ -12,6 +13,18 @@ export default function AccumulatedConsumption() {
 	const { cumulativeData, expectedMonthlyConsumption } =
 		getCumulativeData(data);
 
+	// Split the data into two series, one for the under consumption
+	// limit (blue) and one for the over consumption limit (red)
+	const splitData = cumulativeData.map(({ date, value }) => ({
+		date,
+		consumo:
+			cumulativeData.find(({ date: d }) => d === date - 1)?.value <
+			MONTHLY_CONSUMPTION_LIMIT_IN_KWH
+				? value
+				: null,
+		exceso: value > MONTHLY_CONSUMPTION_LIMIT_IN_KWH ? value : null,
+	}));
+
 	return (
 		<Card>
 			<Flex>
@@ -20,11 +33,11 @@ export default function AccumulatedConsumption() {
 			</Flex>
 			<AreaChart
 				className="pt-4"
-				data={cumulativeData}
+				data={splitData}
 				index="date"
-				categories={["value"]}
+				categories={["consumo", "exceso"]}
 				valueFormatter={(value) => `${value.toFixed()} kWh`}
-				colors={["blue"]}
+				colors={["blue", "red"]}
 				autoMinValue={true}
 				showXAxis={true}
 				showLegend={false}
