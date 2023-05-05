@@ -327,7 +327,6 @@ class Edistribucion:
         r = self.__get_url(
             self.__dashboard + "other.LightningLoginForm.login=1", post=data
         )
-        # print(r.text)
         if "/*ERROR*/" in r.text:
             if "invalidSession" in r.text and not recursive:
                 self.__session = requests.Session()

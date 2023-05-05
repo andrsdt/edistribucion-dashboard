@@ -98,11 +98,9 @@ class Query(graphene.ObjectType):
 
     def resolve_consumption_difference(self, info, month=None):
         start_date = datetime.strptime(month, "%Y-%m-%d").date()
-        print("computing end date")
         end_date = (start_date.replace(day=1, month=(start_date.month % 12) + 1)) - timedelta(days=1)
         if (start_date > end_date): # if month is december
             end_date = end_date.replace(year=end_date.year + 1)
-        print("end_date", end_date)
         previous_month_obj = get_previous_date(end_date)
         accumulated_current_month = get_day_accumulated_interval(start_date.strftime("%Y-%m-%d"),end_date.strftime("%Y-%m-%d"))
 
@@ -114,11 +112,9 @@ class Query(graphene.ObjectType):
 
         current_value = accumulated_current_month["accumulatedValue"]
 
-        print("before previous_end_date...")
         number_of_days_in_previous_month = (end_date.replace(day=1) - timedelta(days=1)).day
         previous_end_date = datetime.strptime(accumulated_current_month["date"], "%Y-%m-%d")
         previous_end_date = previous_end_date.replace(year=previous_month_obj.year, month=previous_month_obj.month, day=min(previous_end_date.day, number_of_days_in_previous_month))
-        print("previous_end_date", previous_end_date)
         accumulated_prev_month = get_day_accumulated_interval(previous_month_obj.date().strftime("%Y-%m-%d"),previous_end_date.date().strftime("%Y-%m-%d")) 
 
         consumption_difference.append(AccumulatedData(
