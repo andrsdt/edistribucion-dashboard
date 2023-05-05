@@ -60,9 +60,9 @@ export default function ConsumptionGraph() {
 					defaultValue={defaultChart}
 					onValueChange={(value) => setChartType(value)}
 				>
-					<ToggleItem value={CHART_TYPES.DAILY} text="Diario" />
-					<ToggleItem value={CHART_TYPES.MONTHLY} text="Mensual" />
-					<ToggleItem value={CHART_TYPES.YEARLY} text="Anual" />
+					<ToggleItem value={CHART_TYPES.DAILY} text="Día" />
+					<ToggleItem value={CHART_TYPES.MONTHLY} text="Mes" />
+					<ToggleItem value={CHART_TYPES.YEARLY} text="Año" />
 				</Toggle>
 			</Flex>
 			{charts[chartType]}
