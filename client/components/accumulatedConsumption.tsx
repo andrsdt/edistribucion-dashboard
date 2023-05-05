@@ -18,7 +18,7 @@ export default function AccumulatedConsumption() {
 	const splitData = cumulativeData.map(({ date, value }) => ({
 		date,
 		consumo:
-			cumulativeData.find(({ date: d }) => d === date - 1)?.value <
+			cumulativeData.find(({ date }) => Math.max(0, date - 1))?.value <
 			MONTHLY_CONSUMPTION_LIMIT_IN_KWH
 				? value
 				: null,

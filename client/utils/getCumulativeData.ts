@@ -36,7 +36,8 @@ export const getCumulativeData = (seriesData: any) => {
 
 	const month =
 		dailyMeasurements.length > 0 ? dayjs(dailyMeasurements[0].date) : dayjs();
-	// Fill the rest of {date: 'yyyy-mm-dd, value: lastValue} until the last day of the month
+
+	// Fill the rest of objects with null values until the last day of the month
 	const numberOfDaysInMonth = month.endOf("month").date();
 	const lastEntry = cumulativeData[cumulativeData.length - 1];
 	const daysRemaining = numberOfDaysInMonth - cumulativeData.length;
