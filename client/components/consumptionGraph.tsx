@@ -6,7 +6,7 @@ import { Card, Flex, Title, Toggle, ToggleItem } from "@tremor/react";
 import { useState } from "react";
 import BarConsumptionChart from "./barConsumptionChart";
 import LineConsumptionChart from "./lineConsumptionChart";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import InformationModal from "./informationModal";
 
 const today = new Date();

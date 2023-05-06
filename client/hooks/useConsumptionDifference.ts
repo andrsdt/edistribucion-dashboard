@@ -1,6 +1,6 @@
 import { gql, useQuery } from "@apollo/client";
 import { client } from "../lib/apolloClient";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 
 const QUERY = gql`
 	query GetConsumptionDifference($month: String!) {

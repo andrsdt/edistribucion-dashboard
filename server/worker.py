@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 import calendar
 
 from Edistribucion import Edistribucion
+from credentials import username, password
 from mongo import electricity_collection, accumulated_monthly, accumulated_daily
 from utils import (
     data_is_complete,
@@ -12,14 +13,14 @@ from utils import (
     group_datetimes_by_consecutive_days,
 )
 
-# Delete the collection to start from scratch
+# Delete the collection to start from scratch by uncommenting the line below:
 # electricity_collection.drop()
 
 # create index to avoid duplicates by date
 electricity_collection.create_index("date", unique=True)
 accumulated_monthly.create_index("date", unique=True)
 accumulated_daily.create_index("date", unique=True)
-edis = Edistribucion(debug_level=logging.DEBUG)
+edis = Edistribucion(debug_level=logging.DEBUG) if username and password else None
 
 
 def get_electricity_data(date: str):
