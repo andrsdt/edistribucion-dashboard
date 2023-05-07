@@ -335,14 +335,14 @@ def get_day_accumulated_interval(start_date_str, end_date_str):
         pipeline = [
             {"$match": {"date": {"$gte": start_date, "$lte": end_date}}},
             {"$unwind": "$data"},
-            {"$group": {"_id": {"date": "$date"}, "total": {"$sum": 1}, "accumulatedValue": {"$sum": "$data.valueDouble"}}},
-            {"$project": {"_id": 1, "complete": {"$cond": [{"$eq": ["$total", 24]}, True, False]}, "accumulatedValue": 1}},
-            {"$sort": {"_id.date": 1}}
+            {"$group": {"_id": {"date": "$date", "complete": "$complete"}, "total": {"$sum": 1}, "accumulatedValue": {"$sum": "$data.valueDouble"}}},
+            {"$project": {"_id": 0, "date": "$_id.date", "complete": "$_id.complete", "accumulatedValue": 1}},
+            {"$sort": {"date": 1}}
         ]
         result = list(electricity_collection.aggregate(pipeline))
 
         for doc in result:
-            date = doc['_id']['date']
+            date = doc['date']
             filter_query = {"date": date}
             update_query = {"$set": {"date": date, "complete": doc["complete"], "accumulatedValue": doc["accumulatedValue"]}}
             accumulated_daily.update_one(filter_query, update_query, upsert=True)
@@ -464,6 +464,6 @@ if __name__ == "__main__":
     # get_year_accumulated_electricity_data(2023)
     # get_day_accumulated_electricity_data("2023-04-25")
     # get_day_accumulated_interval("2023-05-01", "2023-05-03")
-    get_all_year_accumulated(2023)
-    # get_all_month_accumulated('2023-05-01')
+    # get_all_year_accumulated(2023)
+    get_all_month_accumulated('2023-05-01')
     pass
