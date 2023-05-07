@@ -75,8 +75,8 @@ class Query(graphene.ObjectType):
     def resolve_accumulated_data(self, _, year=None):
         accumulated_data = []
         try:
-            result = get_all_year_accumulated(year)
-            for result in result:
+            results = get_all_year_accumulated(year)
+            for result in results:
                 accumulated_data.append(AccumulatedData(
                         date=result["date"],
                         accumulatedValue=result["accumulatedValue"]

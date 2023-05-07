@@ -37,17 +37,18 @@ def get_electricity_data(date: str):
         print(f"Fetching electricity data for date {date} from remote API")
         # We will get the data from an external API (here we use a local file for testing so we don't saturate the API)
         # We would use the functions provided in edistribucion.py
-        cups = edis.get_active_cups()
-        electricity_data = edis.get_meas_interval(cups["Id"], date, date)
-        date = electricity_data[0]["date"]
-        electricity_collection.insert_one(
-            {
-                "date": format_date_dashes(date),
-                "complete": data_is_complete(electricity_data),
-                "data": electricity_data,
-            }
-        )
-        print(f"Cached electricity data for date {date}")
+        if edis is not None:
+            cups = edis.get_active_cups()
+            electricity_data = edis.get_meas_interval(cups["Id"], date, date)
+            date = electricity_data[0]["date"]
+            electricity_collection.insert_one(
+                {
+                    "date": format_date_dashes(date),
+                    "complete": data_is_complete(electricity_data),
+                    "data": electricity_data,
+                }
+            )
+            print(f"Cached electricity data for date {date}")
         electricity_data = electricity_collection.find_one({"date": date})
 
     return electricity_data
@@ -89,6 +90,10 @@ def get_electricity_data_interval(start_date_str: str, end_date_str: str):
             list(dates_to_fetch))
         # NOTE: NOW I HAVE A LIST OF DATE RANGES TO FETCH AND FOR EACH ONE OF THEM, I HAVE TO
         # SELECT THE FIRST AND LAST DAY AND FETCH THE DATA FOR THAT RANGE
+        
+        if edis is None:
+            print("No credentials found, skipping fetching data from API")
+            return electricity_collection.find({"date": {"$gte": start_date, "$lte": end_date}})
         cups = edis.get_active_cups()
         for date_range in date_ranges_to_fetch:
             first_date_str = date_range[0].strftime("%Y-%m-%d")
@@ -128,15 +133,12 @@ def get_electricity_data_interval(start_date_str: str, end_date_str: str):
                         filter={"date": date},
                         upsert=True,
                     )
+                
+                print(
+                f"Cached electricity data for date {start_date_str} - {end_date_str}")
             except Exception:
                 print(
                     f"ERROR FETCHING ELECTRICITY DATA for date {start_date_str} - {end_date_str} from remote API")
-
-                # Return the data we have so far, better than nothing
-                return electricity_collection.find({"date": {"$gte": start_date, "$lte": end_date}})
-
-            print(
-                f"Cached electricity data for date {start_date_str} - {end_date_str}")
 
     return electricity_collection.find({"date": {"$gte": start_date, "$lte": end_date}})
 
